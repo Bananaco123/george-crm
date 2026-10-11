@@ -76,17 +76,25 @@ const dayOffset = (offset, from = TODAY) => {
   return dateKey(date);
 };
 
+/** 阶段停留按进入当前阶段的北京时间日期计算，不以商机创建日期替代。 */
+export function getStageDurationDays(item, asOf = TODAY) {
+  if (!item?.stageEnteredAt || !asOf) return 0;
+  const start = dateKey(item.stageEnteredAt), end = dateKey(asOf);
+  const elapsed = new Date(`${end}T00:00:00+08:00`) - new Date(`${start}T00:00:00+08:00`);
+  return Number.isFinite(elapsed) ? Math.max(0, Math.floor(elapsed / 86400000)) : 0;
+}
+
 // 客户与国家地区取自 GOS V1.3 的 projectDashboard.js；Aster / Lim / Noura 取自
 // operationsDashboard.js 的 RESULT_TOUCHPOINTS。沿用当地项目场景，阶段与日期仍为本 Demo 演示数据。
 const projectRows = [
-  ['P-20261001', '加拿大 Kanchan · 全屋柜体', 'Kanchan Rajput', '林悦', '加拿大', -2, '采购方案设计', '设计中', false],
-  ['P-20261002', '新加坡 Joseph · 圣淘沙别墅', 'Joseph Chen', '林悦', '新加坡', -6, '采购方案设计', '已设计', false],
+  ['P-20261001', '加拿大 Kanchan · 全屋柜体', 'Kanchan Rajput', '林悦', '加拿大', -2, '方案设计', '设计中', false],
+  ['P-20261002', '新加坡 Joseph · 圣淘沙别墅', 'Joseph Chen', '林悦', '新加坡', -6, '方案设计', '已设计', false],
   ['P-20261003', '法国 Sofia · 精品酒店公区', 'Sofia Laurent', '周予安', '法国', -12, '独立设计服务', '已设计', false],
-  ['P-20261004', '美国 Emily · 洛杉矶山景别墅', 'Emily Carter', '林悦', '美国', -24, '采购方案设计', '已设计', false],
+  ['P-20261004', '美国 Emily · 洛杉矶山景别墅', 'Emily Carter', '林悦', '美国', -24, '方案设计', '已设计', false],
   ['P-20261005', '菲律宾 Miguel · 高尔夫会所', 'Miguel Santos', '许知远', '菲律宾', -18, '独立设计服务', '设计中', true, -2],
-  ['P-20261006', '美国 Sarah · 芝加哥办公室', 'Sarah Mitchell', '周予安', '美国', -9, '采购方案设计', '设计中', false],
-  ['P-20261007', '新加坡 Aster Residence · 公寓全屋定制', 'Aster Residence', '林悦', '新加坡', 0, '采购方案设计', '设计中', false],
-  ['P-20261008', '英国 Oliver · 样板间', 'Oliver Smith', '沈佳宁', '英国', -37, '采购方案设计', '已设计', false],
+  ['P-20261006', '美国 Sarah · 芝加哥办公室', 'Sarah Mitchell', '周予安', '美国', -9, '方案设计', '设计中', false],
+  ['P-20261007', '新加坡 Aster Residence · 公寓全屋定制', 'Aster Residence', '林悦', '新加坡', 0, '方案设计', '设计中', false],
+  ['P-20261008', '英国 Oliver · 样板间', 'Oliver Smith', '沈佳宁', '英国', -37, '方案设计', '已设计', false],
   ['P-20261009', '马来西亚 Lim Family House · 住宅', 'Lim Family House', '林悦', '马来西亚', 0, '暂无', '暂无', false],
   ['P-20261010', '加拿大 Nathan · 湖景住宅', 'Nathan Brooks', '许知远', '加拿大', -31, '独立设计服务', '设计中', false],
   ['P-20261011', '沙特 Noura Villa · 别墅', 'Noura Villa', '沈佳宁', '沙特', -15, '暂无', '暂无', true, 0],
@@ -101,61 +109,99 @@ export const projects = projectRows.map(([id, name, customer, owner, region, age
   lostAt: lost && lostAge !== null ? dayOffset(lostAge) : null,
 }));
 
-// quotedAt / closedAt 使“新建报价”和“成交业绩”按实际演示事件日期筛选。
+// 最后三列为报价、成交/输单、进入当前阶段的相对日期，阶段日期独立于创建日期。
 const opportunityRows = [
-  ['OP-001', 0, '全屋柜体定制', 'product', '报价中', 186000, true, -2, 0, null],
-  ['OP-002', 0, '客餐厅软装', 'product', '洽谈中', 88000, false, -1, null, null],
-  ['OP-003', 0, '主卧木作', 'product', '待下单', 126000, true, -1, 0, null],
-  ['OP-004', 0, '全屋深化方案', 'design', '报价中', 18000, true, -2, -1, null],
-  ['OP-005', 1, '进口系统门窗', 'product', '交付中', 248000, true, -6, -4, 0],
-  ['OP-006', 1, '厨房及餐厅定制', 'product', '报价中', 172000, true, -5, -1, null],
-  ['OP-007', 1, '采购方案设计', 'design', '已完成', 15000, true, -6, -5, -2],
-  ['OP-008', 2, '整体空间设计', 'design', '已完成', 96000, true, -12, -10, -1],
-  ['OP-009', 2, '家具采购意向', 'product', '待接受', 210000, false, -1, null, null],
-  ['OP-010', 3, '客餐厅进口家具', 'product', '已完成', 368000, true, -24, -20, -2],
-  ['OP-011', 3, '全屋智能照明', 'product', '交付中', 132000, true, -23, -18, -1],
-  ['OP-012', 3, '软装搭配设计', 'design', '已完成', 26000, true, -24, -23, -15],
-  ['OP-013', 4, '会所公共区家具', 'product', '已输单', 420000, true, -18, -15, -2],
-  ['OP-014', 4, '会所包间定制', 'product', '已输单', 195000, true, -17, -14, -2],
-  ['OP-015', 4, '会所设计咨询', 'design', '洽谈中', 38000, false, -4, null, null],
-  ['OP-016', 5, '办公区系统家具', 'product', '交付中', 285000, true, -9, -8, -3],
-  ['OP-017', 5, '接待区软装', 'product', '待下单', 115000, true, -8, -3, null],
-  ['OP-018', 5, '会议室声学方案', 'product', '洽谈中', 65000, false, -2, null, null],
-  ['OP-019', 6, '客餐厅家具及陈设', 'product', '报价中', 78000, true, 0, 0, null],
-  ['OP-020', 6, '展示柜及木作', 'product', '待下单', 92000, true, 0, 0, null],
-  ['OP-021', 6, '公寓采购方案设计', 'design', '洽谈中', 12000, false, 0, null, null],
-  ['OP-022', 7, '样板间全屋定制', 'product', '已完成', 356000, true, -37, -33, -12],
-  ['OP-023', 7, '样板间软装陈设', 'product', '已完成', 168000, true, -36, -32, -8],
-  ['OP-024', 8, '全屋柜体意向', 'product', '待接受', 185000, false, 0, null, null],
-  ['OP-025', 8, '露台户外家具', 'product', '已拒绝', 36000, false, 0, null, null],
-  ['OP-026', 9, '庭院户外家具', 'product', '已完成', 146000, true, -31, -28, -6],
-  ['OP-027', 9, '主楼整体木作', 'product', '交付中', 520000, true, -30, -25, 0],
-  ['OP-028', 9, '庭院景观设计', 'design', '洽谈中', 68000, false, -5, null, null],
-  ['OP-029', 10, '别墅接待区家具', 'product', '已输单', 156000, true, -15, -13, 0],
-  ['OP-030', 10, '家庭书房定制', 'product', '已输单', 98000, false, -14, null, 0],
-  ['OP-031', 11, '客餐厅整体定制', 'product', '待下单', 238000, true, -4, -1, null],
-  ['OP-032', 11, '儿童房软装', 'product', '已输单', 46000, true, -3, -2, -1],
-  ['OP-033', 12, '酒店客房设计', 'design', '已完成', 48000, true, -1, -1, 0],
-  ['OP-034', 12, '客房家具采购', 'product', '待接受', 320000, false, -1, null, null],
+  ['OP-001', 0, '全屋柜体定制', 'product', '报价中', 186000, true, -2, 0, null, 0],
+  ['OP-002', 0, '客餐厅软装', 'product', '洽谈中', 88000, false, -1, null, null, 0],
+  ['OP-003', 0, '主卧木作', 'product', '待下单', 126000, true, -1, 0, null, 0],
+  ['OP-004', 0, '全屋深化方案', 'design', '报价中', 18000, true, -2, -1, null, -1],
+  ['OP-005', 1, '进口系统门窗', 'product', '交付中', 248000, true, -6, -4, 0, 0],
+  ['OP-006', 1, '厨房及餐厅定制', 'product', '报价中', 172000, true, -5, -1, null, -1],
+  ['OP-007', 1, '方案设计', 'design', '已完成', 15000, true, -6, -5, -2, -1],
+  ['OP-008', 2, '整体空间设计', 'design', '已完成', 96000, true, -12, -10, -1, 0],
+  ['OP-009', 2, '家具采购意向', 'product', '待接受', 210000, false, -1, null, null, -1],
+  ['OP-010', 3, '客餐厅进口家具', 'product', '已完成', 368000, true, -24, -20, -2, -1],
+  ['OP-011', 3, '全屋智能照明', 'product', '交付中', 132000, true, -23, -18, -1, -1],
+  ['OP-012', 3, '软装搭配设计', 'design', '已完成', 26000, true, -24, -23, -15, -13],
+  ['OP-013', 4, '会所公共区家具', 'product', '已输单', 420000, true, -18, -15, -2, -2],
+  ['OP-014', 4, '会所包间定制', 'product', '已输单', 195000, true, -17, -14, -2, -2],
+  ['OP-015', 4, '会所设计咨询', 'design', '洽谈中', 38000, false, -4, null, null, -3],
+  ['OP-016', 5, '办公区系统家具', 'product', '交付中', 285000, true, -9, -8, -3, -3],
+  ['OP-017', 5, '接待区软装', 'product', '待下单', 115000, true, -8, -3, null, -2],
+  ['OP-018', 5, '会议室声学方案', 'product', '洽谈中', 65000, false, -2, null, null, -1],
+  ['OP-019', 6, '客餐厅家具及陈设', 'product', '报价中', 78000, true, 0, 0, null, 0],
+  ['OP-020', 6, '展示柜及木作', 'product', '待下单', 92000, true, 0, 0, null, 0],
+  ['OP-021', 6, '公寓方案设计', 'design', '洽谈中', 12000, false, 0, null, null, 0],
+  ['OP-022', 7, '样板间全屋定制', 'product', '已完成', 356000, true, -37, -33, -12, -10],
+  ['OP-023', 7, '样板间软装陈设', 'product', '已完成', 168000, true, -36, -32, -8, -7],
+  ['OP-024', 8, '全屋柜体意向', 'product', '待接受', 185000, false, 0, null, null, 0],
+  ['OP-025', 8, '露台户外家具', 'product', '已拒绝', 36000, false, 0, null, null, 0],
+  ['OP-026', 9, '庭院户外家具', 'product', '已完成', 146000, true, -31, -28, -6, -5],
+  ['OP-027', 9, '主楼整体木作', 'product', '交付中', 520000, true, -30, -25, 0, 0],
+  ['OP-028', 9, '庭院景观设计', 'design', '洽谈中', 68000, false, -5, null, null, -3],
+  ['OP-029', 10, '别墅接待区家具', 'product', '已输单', 156000, true, -15, -13, 0, 0],
+  ['OP-030', 10, '家庭书房定制', 'product', '已输单', 98000, false, -14, null, 0, 0],
+  ['OP-031', 11, '客餐厅整体定制', 'product', '待下单', 238000, true, -4, -1, null, 0],
+  ['OP-032', 11, '儿童房软装', 'product', '已输单', 46000, true, -3, -2, -1, -1],
+  ['OP-033', 12, '酒店客房设计', 'design', '已完成', 48000, true, -1, -1, 0, 0],
+  ['OP-034', 12, '客房家具采购', 'product', '待接受', 320000, false, -1, null, null, -1],
 ];
 
-export const opportunities = opportunityRows.map(([id, projectIndex, name, category, status, amount, quoted, age, quoteAge, closeAge], index) => {
+// 每个阶段准备独立采购范围，仅补足本月不足四条的阶段；历史样本与已有 ID 保留。
+const monthlyOpportunityCandidates = [
+  ['OP-035', 0, '玄关收纳柜', 'product', '洽谈中', 28000, false, -2, null, null, -1],
+  ['OP-036', 1, '露台遮阳及户外家具', 'product', '洽谈中', 74000, false, -5, null, null, -3],
+  ['OP-037', 5, '员工休息区家具', 'product', '洽谈中', 42000, false, -6, null, null, -2],
+  ['OP-038', 11, '走廊壁柜', 'product', '洽谈中', 36000, false, -3, null, null, -1],
+  ['OP-039', 0, '厨房储物五金', 'product', '报价中', 32000, true, -2, -1, null, -1],
+  ['OP-040', 1, '衣帽间定制', 'product', '报价中', 96000, true, -6, -3, null, -3],
+  ['OP-041', 5, '经理室家具', 'product', '报价中', 68000, true, -7, -4, null, -4],
+  ['OP-042', 11, '浴室柜定制', 'product', '报价中', 42000, true, -4, -2, null, -2],
+  ['OP-043', 0, '书房家具', 'product', '待下单', 46000, true, -2, -1, null, 0],
+  ['OP-044', 1, '客卧整体木作', 'product', '待下单', 78000, true, -6, -4, null, -2],
+  ['OP-045', 5, '会议桌及座椅', 'product', '待下单', 54000, true, -8, -5, null, -3],
+  ['OP-046', 11, '阳台储物柜', 'product', '待下单', 25000, true, -4, -2, null, -1],
+  ['OP-047', 3, '庭院休闲座椅', 'product', '交付中', 68000, true, -9, -7, -4, -4],
+  ['OP-048', 9, '湖景餐厅定制', 'product', '交付中', 128000, true, -8, -6, -2, -2],
+  ['OP-049', 7, '展示区装饰灯具', 'product', '交付中', 36000, true, -7, -5, -1, -1],
+  ['OP-050', 5, '办公储物系统', 'product', '交付中', 72000, true, -6, -4, 0, 0],
+  ['OP-051', 7, '展示区成品边桌', 'product', '已完成', 18000, true, -9, -7, -5, -2],
+  ['OP-052', 2, '公区灯光方案设计', 'design', '已完成', 24000, true, -8, -6, -4, -1],
+  ['OP-053', 9, '客厅窗帘及轨道', 'product', '已完成', 32000, true, -7, -5, -3, 0],
+  ['OP-054', 3, '门厅艺术陈设', 'product', '已完成', 26000, true, -6, -4, -2, 0],
+  ['OP-055', 5, '会议室地毯', 'product', '已输单', 38000, true, -8, -5, -2, -2],
+  ['OP-056', 1, '泳池边户外家具', 'product', '已输单', 86000, true, -6, -4, -1, -1],
+  ['OP-057', 11, '入户金属屏风', 'product', '已输单', 29000, true, -4, -2, 0, 0],
+  ['OP-058', 0, '厨房电器配套', 'product', '已输单', 56000, true, -2, -1, 0, 0],
+];
+const monthStart = `${TODAY.slice(0, 7)}-01`;
+const supplementaryRows = BOARD_OPPORTUNITY_STAGES.flatMap(stage => {
+  const count = opportunityRows.filter(row => row[4] === stage && dayOffset(row[7]) >= monthStart).length;
+  return monthlyOpportunityCandidates.filter(row => row[4] === stage).slice(0, Math.max(0, 4 - count));
+});
+const supplementalIds = new Set(supplementaryRows.map(row => row[0]));
+
+export const opportunities = [...opportunityRows, ...supplementaryRows].map(([id, projectIndex, name, category, status, amount, quoted, age, quoteAge, closeAge, stageAge], index) => {
   const project = projects[projectIndex];
   const departmentEmployees = EMPLOYEES.filter(employee => employee.departmentId === project.departmentId);
   const solutionManager = departmentEmployees[(index + 1) % departmentEmployees.length].name;
   const won = ['交付中', '已完成'].includes(status);
   const hasOrder = !['待接受', '已拒绝', '洽谈中'].includes(status);
   const hasReceipt = hasOrder && status !== '报价中';
+  const latestDate = (...dates) => dates.filter(Boolean).sort().at(-1);
+  const createdAt = supplementalIds.has(id) ? latestDate(project.createdAt, monthStart, dayOffset(age)) : dayOffset(age);
+  const quotedAt = quoteAge === null ? null : latestDate(createdAt, dayOffset(quoteAge));
+  const closedAt = closeAge === null ? null : latestDate(createdAt, quotedAt, dayOffset(closeAge));
+  const stageEnteredAt = latestDate(createdAt, quotedAt, closedAt, dayOffset(stageAge));
   return {
     id, projectId: project.id, name: `${project.customer.split(' ')[0]} · ${name}`, category, owner: project.owner,
-    status, amount, quoted, createdAt: dayOffset(age),
+    status, amount, quoted, createdAt, stageEnteredAt,
     opportunityType: category === 'design' ? '设计服务' : id === 'OP-011' ? '增补订单' : '产品订单',
     orderAmount: hasOrder ? amount : null, closedAmount: won ? amount : 0,
     receivedAmount: hasReceipt ? (won ? Math.round(amount * (status === '已完成' ? 1 : 0.6)) : 0) : null,
     solutionManager, ...responsibility(solutionManager),
     opportunityDepartment: ORG_TREE.find(department => department.id === project.departmentId).name,
-    quotedAt: quoteAge === null ? null : dayOffset(quoteAge),
-    closedAt: closeAge === null ? null : dayOffset(closeAge),
+    quotedAt, closedAt,
   };
 });
 

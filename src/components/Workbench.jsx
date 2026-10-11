@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Icon from './Icon.jsx';
-import { PROJECT_STAGES, BOARD_OPPORTUNITY_STAGES, projects, opportunities, getProjectStatus, getProjectStats, getMetrics, matchesFilters, matchesPeriod, TODAY, dateKey } from '../data.js';
+import StageDurationTag from './StageDurationTag.jsx';
+import { PROJECT_STAGES, BOARD_OPPORTUNITY_STAGES, projects, opportunities, getProjectStatus, getMetrics, matchesFilters, matchesPeriod, TODAY, dateKey } from '../data.js';
 
 const amount = value => new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 }).format(value || 0);
 const metricAmount = value => value >= 10000 ? `${(value / 10000).toFixed(1).replace(/\.0$/, '')}万` : amount(value);
@@ -59,25 +60,24 @@ function OpportunityCard({ item, onOpen, onLocate, nested = false }) {
   const project = findProject(item.projectId);
   return <article className={`business-card opportunity-card ${nested ? 'nested-card' : ''}`} data-opportunity-id={item.id} onClick={event => openCard(event, item, onOpen)}>
     <button className="record-name" onClick={() => onOpen(item)}>{item.name}</button>
-    {!nested && <button className="record-project-link" onClick={() => onLocate(item.projectId)} title="定位所属项目"><Icon name="folder" size={13} /><span>{project?.name}</span><Icon name="arrow" size={12} /></button>}
+    <div className="record-tags">{nested && <Tag tone={item.status === '已输单' ? 'red' : 'blue'}>{item.status}</Tag>}<StageDurationTag item={item} /></div>
     <dl className="record-fields">
+      <DataField label="关联项目"><button className="record-project-link" onClick={() => onLocate(item.projectId)} title={`定位项目：${project?.name}`}><span>{project?.name}</span><Icon name="arrow" size={12} /></button></DataField>
       <DataField label="客户">{project?.customer}</DataField>
       <DataField label="方案经理">{item.solutionManager}</DataField>
       <DataField label="商机部门">{item.opportunityDepartment}</DataField>
       <DataField label="订单金额">{item.orderAmount == null ? '—' : `¥ ${amount(item.orderAmount)}`}</DataField>
       <DataField label="实收金额">{item.receivedAmount == null ? '—' : `¥ ${amount(item.receivedAmount)}`}</DataField>
+      <DataField label="创建于"><time dateTime={item.createdAt}>{item.createdAt}</time></DataField>
     </dl>
-    <div className="record-foot"><span>创建于 {item.createdAt}</span>{nested ? <Tag tone={item.status === '已输单' ? 'red' : 'blue'}>{item.status}</Tag> : <button className="text-button" onClick={() => onOpen(item)}>详情</button>}</div>
   </article>;
 }
 
 function ProjectCard({ project, expanded, toggle, highlighted, onOpen, onLocate, onProject }) {
-  const stats = getProjectStats(project), related = projectOpportunities(project.id);
+  const related = projectOpportunities(project.id);
   return <article className={`business-card project-card ${highlighted ? 'highlighted' : ''}`} data-project-id={project.id} onClick={event => openCard(event, project, onProject)}>
-    <button className="record-name" onClick={() => onProject(project)}>{project.name}</button><div className="record-reference">{project.id}</div>
-    <dl className="record-fields"><DataField label="客户">{project.customer}</DataField><DataField label="负责人">{project.pm}</DataField><DataField label="国家地区">{project.region}</DataField><DataField label="交付经理">{project.deliveryManager || project.owner}</DataField><DataField label="项目金额">¥ {amount(project.contribution)}</DataField><DataField label="实收金额">¥ {amount(project.collected)}</DataField></dl>
-    <div className="project-totals"><span>已报价 <b>{stats.quoted}</b></span><span>已成交 <b>{stats.won}</b></span></div>
-    <div className="record-design"><span>{project.designType === '暂无' ? '暂无设计' : project.designType}</span>{project.designStatus !== '暂无' && <Tag tone={project.designStatus === '已设计' ? 'teal' : 'purple'}>{project.designStatus}</Tag>}</div>
+    <button className="record-name" onClick={() => onProject(project)}>{project.name}</button>
+    <dl className="record-fields"><DataField label="客户">{project.customer}</DataField><DataField label="负责人">{project.pm}</DataField><DataField label="国家地区">{project.region}</DataField><DataField label="交付经理">{project.deliveryManager || project.owner}</DataField><DataField label="项目金额">¥ {amount(project.contribution)}</DataField><DataField label="实收金额">¥ {amount(project.collected)}</DataField><DataField label={project.designType === '暂无' ? '方案设计' : project.designType}>{project.designStatus === '暂无' ? '暂无' : <Tag tone={project.designStatus === '已设计' ? 'teal' : 'purple'}>{project.designStatus}</Tag>}</DataField></dl>
     <button className={`expand-opps ${expanded ? 'expanded' : ''}`} aria-expanded={expanded} onClick={() => toggle(project.id)}><span>关联商机 <b>{related.length}</b></span><Icon name="chevronDown" size={14} /></button>
     {expanded && <div className="project-children">{related.map(item => <OpportunityCard key={item.id} item={item} onOpen={onOpen} onLocate={onLocate} nested />)}</div>}
   </article>;
@@ -177,7 +177,11 @@ export function Board({ filter, onOpportunity, onProject, locateId, setLocateId,
     }
   };
   const changeMode = value => { setMode(value); setLocateId(null); track.current?.scrollTo({ left: 0 }); };
-  const shift = direction => track.current?.scrollBy({ left: direction * 440, behavior: 'smooth' });
+  const shift = direction => {
+    const scroller = track.current;
+    const width = scroller?.querySelector('.pipeline-column')?.getBoundingClientRect().width ?? 280;
+    scroller?.scrollBy({ left: direction * width, behavior: 'smooth' });
+  };
   return <section className="panel board-panel" id="business-board">
     <div className="section-heading board-heading">
       <h2>项目商机</h2>
@@ -190,11 +194,11 @@ export function Board({ filter, onOpportunity, onProject, locateId, setLocateId,
     {locateId && <div className="locate-notice"><Icon name="target" size={14} />{findProject(locateId)?.name}<button onClick={() => setLocateId(null)}>取消定位</button></div>}
     <div className={`pipeline-viewport ${edges.left ? 'has-left' : ''} ${edges.right ? 'has-right' : ''}`}>
       <div className={`pipeline-scroll ${dragging ? 'is-dragging' : ''}`} ref={track} tabIndex={0} aria-label={`${mode === 'project' ? '项目' : '商机'}阶段进度图`} onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag} onClickCapture={cancelDragClick} onPointerLeave={() => { if (!drag.current?.moved) drag.current = null; }} onLostPointerCapture={() => { drag.current = null; setDragging(false); }}>
-        <div className="pipeline-grid" style={{ '--stage-count': stages.length }}>{stages.map(stage => {
+        <div className="pipeline-grid" style={{ '--stage-count': stages.length, '--visible-stages': Math.min(stages.length, 4.5) }}>{stages.map(stage => {
           const records = items.filter(item => (mode === 'project' ? getProjectStatus(item) : item.status) === stage);
           return <section className={`pipeline-column ${stage === '已输单' ? 'loss-stage' : ''}`} key={stage}>
             <div className="pipeline-step" title="按住拖动，或滚动滚轮横向浏览"><span className="step-name">{stage}</span><span className="step-total">{records.length}</span></div>
-            <div className="pipeline-cards">{records.length ? records.map(item => mode === 'project' ? <ProjectCard key={item.id} project={item} expanded={expanded.includes(item.id)} toggle={toggle} highlighted={locateId === item.id} onOpen={onOpportunity} onLocate={onLocate} onProject={onProject} /> : <OpportunityCard key={item.id} item={item} onOpen={onOpportunity} onLocate={onLocate} />) : <div className="lane-empty"><Icon name="folder" size={23} /><span>{query ? '没有匹配结果' : '暂无数据'}</span></div>}</div>
+            <div className="pipeline-cards">{records.map(item => mode === 'project' ? <ProjectCard key={item.id} project={item} expanded={expanded.includes(item.id)} toggle={toggle} highlighted={locateId === item.id} onOpen={onOpportunity} onLocate={onLocate} onProject={onProject} /> : <OpportunityCard key={item.id} item={item} onOpen={onOpportunity} onLocate={onLocate} />)}</div>
           </section>;
         })}</div>
       </div>

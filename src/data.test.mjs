@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { PROJECT_STAGES, OPPORTUNITY_STAGES, BOARD_OPPORTUNITY_STAGES, ORG_TREE, EMPLOYEES, CURRENT_USER, projects, opportunities, tasks, dormantCustomers, TODAY, dateKey, getProjectStats, getProjectStatus, getMetrics, matchesFilters, matchesPeriod, hydrateStoredTasks, getDepartmentIds } from './data.js';
+import { PROJECT_STAGES, OPPORTUNITY_STAGES, BOARD_OPPORTUNITY_STAGES, ORG_TREE, EMPLOYEES, CURRENT_USER, projects, opportunities, tasks, dormantCustomers, TODAY, dateKey, getProjectStats, getProjectStatus, getMetrics, matchesFilters, matchesPeriod, hydrateStoredTasks, getDepartmentIds, getStageDurationDays } from './data.js';
 
 const project = { id: 'test-project', lost: false };
 const item = (status, overrides = {}) => ({ projectId: project.id, category: 'product', status, amount: 1000, quoted: false, ...overrides });
@@ -183,7 +183,7 @@ test('商机从洽谈中进入看板，项目收款与产品商机同源且角�
 
 test('海外客户与项目名称参照 GOS，商机、待办、沉睡客户保持同一客户关系', () => {
   assert.equal(projects.length, 13);
-  assert.equal(opportunities.length, 34);
+  assert.ok(opportunities.length >= 34);
   assert.ok(projects.every(project => /[a-z]/i.test(project.customer) && /[a-z]/i.test(project.name)));
   assert.deepEqual(projects.filter(project => ['Aster Residence', 'Lim Family House', 'Noura Villa'].includes(project.customer)).map(project => [project.customer, project.region]), [
     ['Aster Residence', '新加坡'], ['Lim Family House', '马来西亚'], ['Noura Villa', '沙特'],
@@ -257,4 +257,62 @@ test('旧缓存迁移更新国际客户名称但保留完成状态、日期、�
   assert.equal(JSON.stringify(saved), before);
   assert.deepEqual(hydrateStoredTasks(migrated), migrated);
   assert.deepEqual(hydrateStoredTasks(null), tasks);
+});
+
+test('本月每个看板阶段至少四个独立商机，保留历史样本和项目关系', () => {
+  const current = opportunities.filter(item => matchesFilters(item) && matchesPeriod(item, '本月'));
+  for (const stage of BOARD_OPPORTUNITY_STAGES) {
+    assert.ok(current.filter(item => item.status === stage).length >= 4, `${stage} 本月应至少有四条商机`);
+  }
+  assert.equal(new Set(opportunities.map(item => item.id)).size, opportunities.length);
+  assert.equal(new Set(opportunities.map(item => `${item.projectId}:${item.name}`)).size, opportunities.length);
+  assert.ok(opportunities.some(item => !matchesPeriod(item, '本月')));
+  assert.ok(opportunities.every(item => projects.some(project => project.id === item.projectId && project.createdAt <= item.createdAt)));
+  assert.ok(projects.every(item => item.designType !== '采购方案设计'));
+  assert.ok(projects.some(item => item.designType === '方案设计'));
+  assert.ok(opportunities.every(item => !item.name.includes('采购方案设计')));
+});
+
+test('进入阶段日期独立于创建日期且符合报价、成交、交付与完成先后关系', () => {
+  for (const opportunity of opportunities) {
+    assert.match(opportunity.stageEnteredAt, /^\d{4}-\d{2}-\d{2}$/);
+    assert.ok(opportunity.createdAt <= opportunity.stageEnteredAt && opportunity.stageEnteredAt <= TODAY, opportunity.id);
+    assert.equal(Boolean(opportunity.quotedAt), opportunity.quoted, opportunity.id);
+    if (opportunity.quotedAt) {
+      assert.ok(opportunity.createdAt <= opportunity.quotedAt && opportunity.quotedAt <= opportunity.stageEnteredAt, opportunity.id);
+    }
+    if (opportunity.closedAt) {
+      assert.ok(opportunity.createdAt <= opportunity.closedAt && opportunity.closedAt <= opportunity.stageEnteredAt, opportunity.id);
+      if (opportunity.quotedAt) assert.ok(opportunity.quotedAt <= opportunity.closedAt, opportunity.id);
+    }
+    if (opportunity.status === '报价中') assert.equal(opportunity.stageEnteredAt, opportunity.quotedAt);
+    if (['交付中', '已输单'].includes(opportunity.status)) assert.equal(opportunity.stageEnteredAt, opportunity.closedAt);
+    if (opportunity.status === '已完成') {
+      assert.ok(opportunity.closedAt);
+      assert.ok(opportunity.closedAt <= opportunity.stageEnteredAt);
+      assert.equal(opportunity.receivedAmount, opportunity.orderAmount);
+    }
+    if (['洽谈中', '待接受', '已拒绝'].includes(opportunity.status)) {
+      assert.equal(opportunity.quotedAt, null);
+      assert.equal(opportunity.closedAt, null);
+      assert.equal(opportunity.orderAmount, null);
+      assert.equal(opportunity.receivedAmount, null);
+    }
+  }
+  assert.ok(opportunities.some(item => item.createdAt < item.stageEnteredAt));
+  assert.ok(opportunities.some(item => item.status === '已完成' && item.closedAt < item.stageEnteredAt));
+});
+
+test('阶段停留天数按北京时间自然日计算，跨月闰日有效且不会出现负数', () => {
+  assert.equal(getStageDurationDays({ createdAt: '2026-01-01', stageEnteredAt: '2026-10-09' }, '2026-10-11'), 2);
+  assert.equal(getStageDurationDays({ stageEnteredAt: '2026-09-30' }, '2026-10-02'), 2);
+  assert.equal(getStageDurationDays({ stageEnteredAt: '2024-02-28' }, '2024-03-01'), 2);
+  assert.equal(getStageDurationDays({ stageEnteredAt: '2026-10-10T17:30:00Z' }, '2026-10-11T15:59:00Z'), 0);
+  assert.equal(getStageDurationDays({ stageEnteredAt: '2026-10-12' }, '2026-10-11'), 0);
+  assert.equal(getStageDurationDays({ stageEnteredAt: 'invalid' }, TODAY), 0);
+  assert.equal(getStageDurationDays({ stageEnteredAt: TODAY }, 'invalid'), 0);
+  assert.equal(getStageDurationDays({ createdAt: '2026-01-01' }), 0);
+  assert.equal(getStageDurationDays(null), 0);
+  assert.equal(getStageDurationDays({ stageEnteredAt: TODAY }), 0);
+  assert.ok(opportunities.every(item => Number.isInteger(getStageDurationDays(item)) && getStageDurationDays(item) >= 0));
 });

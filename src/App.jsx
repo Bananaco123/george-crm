@@ -3,6 +3,7 @@ import Icon from './components/Icon.jsx';
 import { OPPORTUNITY_STAGES, ORG_TREE, EMPLOYEES, projects, opportunities, tasks as initialTasks, dormantCustomers, getProjectStatus, getProjectStats, matchesFilters, matchesPeriod, hydrateStoredTasks, TODAY } from './data.js';
 import { Metrics, Board, Schedule, Attention } from './components/Workbench.jsx';
 import ConversationPanel from './components/ConversationPanel.jsx';
+import StageDurationTag from './components/StageDurationTag.jsx';
 import { getRelatedConversations } from './conversations.js';
 
 const OP_COLORS = ['slate', 'red', 'blue', 'purple', 'amber', 'teal', 'green', 'red'];
@@ -93,7 +94,7 @@ function OpportunityDetail({ item, onLocate, onProject, onConversation }) {
     ['创建日期', item.createdAt], ['报价情况', item.quoted ? '已创建报价' : '暂未报价'],
   ];
   return <>
-    <div className="detail-summary"><Badge color={OP_COLORS[OPPORTUNITY_STAGES.indexOf(item.status)]}>{item.status}</Badge><span>{item.id}</span></div>
+    <div className="detail-summary"><Badge color={OP_COLORS[OPPORTUNITY_STAGES.indexOf(item.status)]}>{item.status}</Badge><StageDurationTag item={item} /><span>{item.id}</span></div>
     <div className="detail-fields">{fields.map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}</div>
     <h3 className="detail-section-title">商机进展</h3>
     <div className="stage-timeline">{route.map((stage, i) => <div key={stage} className={`${i <= route.indexOf(item.status) ? 'reached' : ''} ${stage === item.status ? 'current' : ''}`}><span>{i < route.indexOf(item.status) ? <Icon name="check" size={12} /> : i + 1}</span><small>{stage}</small></div>)}</div>
