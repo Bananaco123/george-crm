@@ -1,0 +1,24 @@
+{
+  "name": "george-crm",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "George CRM 工作台",
+  "packageManager": "pnpm@11.25.0",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "dev": "vite --configLoader native",
+    "build": "vite build --configLoader native",
+    "preview": "vite preview --configLoader native",
+    "test": "node --test src/data.test.mjs src/conversations.test.mjs",
+    "deploy": "node scripts/deploy.mjs"
+  },
+  "dependencies": {
+    "react": "19.2.6",
+    "react-dom": "19.2.6"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "6.0.2",
+    "vite": "8.0.14"
+  }
+}

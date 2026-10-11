@@ -4,7 +4,7 @@
 
 ## 运行
 
-独立安装与 CI 使用 Node.js 24、pnpm 11.25.0，依赖版本由 `pnpm-lock.yaml` 锁定。
+独立安装使用 Node.js 24、pnpm 11.25.0，依赖版本由 `pnpm-lock.yaml` 锁定。
 
 ```sh
 pnpm install --frozen-lockfile
@@ -37,8 +37,9 @@ node --test src/data.test.mjs src/conversations.test.mjs
 
 - 代码仓库：https://github.com/Bananaco123/george-crm
 - 在线 Demo：https://bananaco123.github.io/george-crm/
-- 发布流程：`.github/workflows/pages.yml`。推送到 `main` 后自动安装锁定依赖、运行测试、构建 `dist` 并发布 GitHub Pages，也可在 Actions 手动执行。
-- Pages 使用 GitHub Actions 作为构建来源。Vite 使用相对资源路径，兼容仓库子目录；不要提交 `dist`、`.vite` 或 `node_modules`。
+- 源码保存在 `main`，网站使用 `gh-pages` 分支的根目录。Vite 使用相对资源路径，兼容仓库子目录；不要将 `dist`、`.vite` 或 `node_modules` 提交到源码分支。
+- 后续更新：提交源码并推送 `main` 后，执行 `pnpm deploy`。该命令运行测试、构建网站，再通过已认证的 GitHub CLI 将本次产物提交到 `gh-pages`，由 GitHub Pages 完成发布。
+- 发布需要本机已安装 GitHub CLI，且登录账号拥有本仓库写权限；脚本不会读取或保存明文凭据。当前发布方式不需要额外的 Actions 工作流写权限。
 
 ## 当前范围
 
