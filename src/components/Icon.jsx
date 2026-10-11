@@ -36,6 +36,15 @@ const shapes = {
   download: <><path d="M12 3v12m-5-5 5 5 5-5M4 15v6h16v-6" /></>,
   globe: <><circle cx="12" cy="12" r="9" /><ellipse cx="12" cy="12" rx="4" ry="9" /><path d="M3 12h18M5 7h14M5 17h14" /></>,
   eye: <><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" /><circle cx="12" cy="12" r="3" /></>,
+  megaphone: <><path d="M3 10h5l9-5v14l-9-5H3ZM8 14l1 7H6l-2-7M21 9v6" /></>,
+  messageIn: <><path d="M5 3h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2Z" /><path d="M12 6v8m-3-3 3 3 3-3" /></>,
+  userTransfer: <><circle cx="8" cy="7" r="3" /><path d="M2 21v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2M15 10h7m-3-3 3 3-3 3" /></>,
+  userPlus: <><circle cx="8" cy="7" r="3" /><path d="M2 21v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2M19 6v8M15 10h8" /></>,
+  folderPlus: <><path d="M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" /><path d="M12 10v7M8.5 13.5h7" /></>,
+  briefcasePlus: <><rect x="3" y="7" width="18" height="14" rx="2" /><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M12 11v6M9 14h6" /></>,
+  quoteSheet: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8ZM14 2v6h6M9 10l3 4 3-4M9 14h6M9 17h6M12 14v5" /></>,
+  banknote: <><rect x="2" y="5" width="20" height="14" rx="2" /><circle cx="12" cy="12" r="3" /><path d="M2 9a4 4 0 0 0 4-4M18 5a4 4 0 0 0 4 4M2 15a4 4 0 0 1 4 4M18 19a4 4 0 0 1 4-4" /></>,
+  folderX: <><path d="M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" /><path d="m9 11 6 6m0-6-6 6" /></>,
 };
 
 export default function Icon({ name = 'home', size = 20, strokeWidth = 1.7, title, ...props }) {

@@ -4,11 +4,10 @@ import StageDurationTag from './StageDurationTag.jsx';
 import { PROJECT_STAGES, BOARD_OPPORTUNITY_STAGES, projects, opportunities, getProjectStatus, getMetrics, matchesFilters, matchesPeriod, TODAY, dateKey } from '../data.js';
 
 const amount = value => new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 }).format(value || 0);
-const metricAmount = value => value >= 10000 ? `${(value / 10000).toFixed(1).replace(/\.0$/, '')}万` : amount(value);
+const metricAmount = value => value >= 10000 ? (value / 10000).toFixed(1).replace(/\.0$/, '') : amount(value);
 const findProject = id => projects.find(item => item.id === id);
 const projectOpportunities = id => opportunities.filter(item => item.projectId === id);
 const isPending = item => item.status !== 'completed';
-const dayText = key => `${Number(key.slice(5, 7))}月${Number(key.slice(8))}日`;
 function Tag({ children, tone = 'blue' }) { return <span className={`badge ${tone}`}>{children}</span>; }
 function SmallButton({ icon, label, onClick, disabled }) { return <button className="icon-button" aria-label={label} title={label} onClick={onClick} disabled={disabled}><Icon name={icon} size={16} /></button>; }
 
@@ -38,11 +37,11 @@ function useTransientScrollbars(container) {
 export function Metrics({ filter }) {
   const period = filter.period;
   const metrics = getMetrics(period, filter.scope, filter);
-  return <section className="panel metrics-section" aria-label="业务概览线">
-    <div className="section-heading"><h2>业务概览线</h2></div>
+  return <section className="panel metrics-section" aria-label="业务概览">
+    <div className="section-heading"><h2>业务概览</h2></div>
     <div className="metric-cards">{[metrics.slice(0, 5), metrics.slice(5)].map((row, i) => <div className="metric-card-row" style={{ '--card-count': row.length }} key={i}>{row.map(metric => <article className="metric-card" key={metric.key}>
       <div className="metric-label"><span>{metric.label}</span><span className={`metric-icon ${metric.color}`}><Icon name={metric.icon} size={15} /></span></div>
-      <div className="metric-value" title={`${metric.value}${metric.unit}`}>{metric.unit === '元' && <span className="currency">¥</span>}{metric.unit === '元' ? metricAmount(metric.value) : amount(metric.value)}{metric.unit !== '元' && <small>{metric.unit}</small>}</div>
+      <div className="metric-value" title={`${metric.value}${metric.unit}`}>{metric.unit === '元' && <span className="currency">¥</span>}{metric.unit === '元' ? metricAmount(metric.value) : amount(metric.value)}{metric.unit === '元' ? metric.value >= 10000 && <small>万</small> : <small>{metric.unit}</small>}</div>
       <div className="metric-footer"><span>较上周期</span><span className={metric.change > 0 ? 'trend-up' : metric.change < 0 ? 'trend-down' : 'trend-flat'}>{metric.change === null ? '—' : `${metric.change > 0 ? '+' : ''}${metric.change}%`}</span></div>
     </article>)}</div>)}</div>
   </section>;
@@ -177,18 +176,12 @@ export function Board({ filter, onOpportunity, onProject, locateId, setLocateId,
     }
   };
   const changeMode = value => { setMode(value); setLocateId(null); track.current?.scrollTo({ left: 0 }); };
-  const shift = direction => {
-    const scroller = track.current;
-    const width = scroller?.querySelector('.pipeline-column')?.getBoundingClientRect().width ?? 280;
-    scroller?.scrollBy({ left: direction * width, behavior: 'smooth' });
-  };
   return <section className="panel board-panel" id="business-board">
     <div className="section-heading board-heading">
       <h2>项目商机</h2>
       <div className="board-tools">
         <label className="search-input"><Icon name="search" size={15} /><input aria-label="搜索项目名称和客户" placeholder="搜索项目名称和客户" value={query} onChange={event => { setQuery(event.target.value); setLocateId(null); track.current?.scrollTo({ left: 0 }); }} />{query && <button aria-label="清空搜索" onClick={() => setQuery('')}><Icon name="close" size={13} /></button>}</label>
         <div className="segmented" aria-label="看板视图"><button aria-pressed={mode === 'opportunity'} className={mode === 'opportunity' ? 'selected' : ''} onClick={() => changeMode('opportunity')}>商机视图</button><button aria-pressed={mode === 'project'} className={mode === 'project' ? 'selected' : ''} onClick={() => changeMode('project')}>项目视图</button></div>
-        <div className="track-controls"><button className="icon-button previous" aria-label="前面的阶段" disabled={!edges.left} onClick={() => shift(-1)}><Icon name="chevron" size={16} /></button><SmallButton icon="chevron" label="后面的阶段" disabled={!edges.right} onClick={() => shift(1)} /></div>
       </div>
     </div>
     {locateId && <div className="locate-notice"><Icon name="target" size={14} />{findProject(locateId)?.name}<button onClick={() => setLocateId(null)}>取消定位</button></div>}
@@ -212,7 +205,6 @@ export function Schedule({ tasks, selectedDate, setSelectedDate, onTask, focusRe
   const initial = new Date(`${TODAY}T12:00:00+08:00`);
   const [month, setMonth] = useState(new Date(initial.getFullYear(), initial.getMonth(), 1));
   const [type, setType] = useState('全部');
-  const [range, setRange] = useState('selected');
   const [page, setPage] = useState(0);
   const [showCalendar, setShowCalendar] = useState(true);
   const year = month.getFullYear(), monthNumber = month.getMonth(), offset = (month.getDay() + 6) % 7;
@@ -220,18 +212,20 @@ export function Schedule({ tasks, selectedDate, setSelectedDate, onTask, focusRe
   const dates = Array.from({ length: Math.ceil((offset + totalDays) / 7) * 7 }, (_, i) => { const date = new Date(year, monthNumber, i - offset + 1, 12); return { key: dateKey(date), day: date.getDate(), current: date.getMonth() === monthNumber }; });
   const unfinished = tasks.filter(isPending);
   const datesWithTasks = new Set(unfinished.map(item => item.date));
-  const base = unfinished.filter(item => range === 'all' || range === 'overdue' && item.date < TODAY || range === 'selected' && item.date === selectedDate).sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`));
+  const base = unfinished.filter(item => item.date === selectedDate).sort((a, b) => a.time.localeCompare(b.time));
   const filtered = base.filter(item => type === '全部' || item.type === type);
   const maxPage = Math.max(0, Math.ceil(filtered.length / 5) - 1), currentPage = Math.min(page, maxPage);
-  useEffect(() => { if (focusRequest) { const current = new Date(`${TODAY}T12:00:00`); setMonth(new Date(current.getFullYear(), current.getMonth(), 1)); setSelectedDate(TODAY); setRange('selected'); setType('全部'); setPage(0); } }, [focusRequest, setSelectedDate]);
-  const chooseDate = key => { const chosen = new Date(`${key}T12:00:00`); setMonth(new Date(chosen.getFullYear(), chosen.getMonth(), 1)); setSelectedDate(key); setRange('selected'); setPage(0); };
+  useEffect(() => { if (focusRequest) { const current = new Date(`${TODAY}T12:00:00`); setMonth(new Date(current.getFullYear(), current.getMonth(), 1)); setSelectedDate(TODAY); setType('全部'); setPage(0); } }, [focusRequest, setSelectedDate]);
+  const chooseDate = key => { const chosen = new Date(`${key}T12:00:00`); setMonth(new Date(chosen.getFullYear(), chosen.getMonth(), 1)); setSelectedDate(key); setPage(0); };
   const today = () => { chooseDate(TODAY); setMonth(new Date(initial.getFullYear(), initial.getMonth(), 1)); };
-  return <aside className="panel schedule-panel" aria-label="日历与待办">
-    <div className="section-heading"><h2>日历与待办</h2><div className="calendar-actions"><button className="text-button" onClick={today}>今天</button><button className={`icon-button ${showCalendar ? 'calendar-collapse' : ''}`} aria-label={showCalendar ? '收起日历' : '展开日历'} aria-expanded={showCalendar} onClick={() => setShowCalendar(value => !value)}><Icon name="chevronDown" size={15} /></button></div></div>
+  return <aside className="schedule-panel" aria-label="我的日历与待办中心">
+    <section className="panel calendar-panel" aria-label="我的日历">
+    <div className="section-heading"><h2>我的日历</h2><div className="calendar-actions"><button className="text-button" onClick={today}>今天</button><button className={`icon-button ${showCalendar ? 'calendar-collapse' : ''}`} aria-label={showCalendar ? '收起日历' : '展开日历'} aria-expanded={showCalendar} onClick={() => setShowCalendar(value => !value)}><Icon name="chevronDown" size={15} /></button></div></div>
     {showCalendar && <div className="calendar-block"><div className="calendar-month"><strong>{year}年{monthNumber + 1}月</strong><div><button className="icon-button previous" aria-label="上个月" onClick={() => setMonth(new Date(year, monthNumber - 1, 1))}><Icon name="chevron" size={15} /></button><SmallButton icon="chevron" label="下个月" onClick={() => setMonth(new Date(year, monthNumber + 1, 1))} /></div></div><div className="calendar-grid">{['一', '二', '三', '四', '五', '六', '日'].map(day => <span className="weekday" key={day}>{day}</span>)}{dates.map(date => <button key={date.key} aria-label={date.key} aria-pressed={date.key === selectedDate} className={`calendar-day ${date.current ? '' : 'muted-day'} ${date.key === TODAY ? 'today' : ''} ${date.key === selectedDate ? 'chosen' : ''}`} onClick={() => chooseDate(date.key)}><span>{date.day}</span>{datesWithTasks.has(date.key) && <i />}</button>)}</div></div>}
-    <section className="daily-tasks" id="todo-panel"><div className="task-day-heading"><h3>{range === 'all' ? '全部待办' : range === 'overdue' ? '逾期待办' : `${selectedDate === TODAY ? '今天' : dayText(selectedDate)}待办`}<span>{base.length}</span></h3><select className="bare-select" aria-label="待办日期范围" value={range} onChange={event => { setRange(event.target.value); setPage(0); }}><option value="selected">所选日期</option><option value="all">全部日期</option><option value="overdue">仅逾期</option></select></div>
-    <div className="task-tabs" role="tablist" aria-label="待办类型">{['全部', '跟进', '项目', '报价'].map(value => <button role="tab" aria-selected={value === type} className={value === type ? 'selected' : ''} key={value} onClick={() => { setType(value); setPage(0); }}>{value}<span>{base.filter(item => value === '全部' || item.type === value).length}</span></button>)}</div>
-    <div className="side-task-list" ref={taskList}>{filtered.length ? filtered.slice(currentPage * 5, currentPage * 5 + 5).map(item => <button className="side-task" key={item.id} onClick={() => onTask(item)}><div className="side-task-meta"><Tag tone={item.type === '报价' ? 'purple' : item.type === '项目' ? 'teal' : 'blue'}>{item.type}</Tag><time className={item.date < TODAY ? 'overdue' : ''}>{item.date < TODAY ? '逾期 · ' : range !== 'selected' ? `${dayText(item.date)} ` : ''}{item.time}</time></div><strong>{item.title}</strong><div className="side-task-project">{findProject(item.projectId)?.name || '客户跟进'}</div><div className="side-task-owner"><span>{item.owner}</span><Icon name="chevron" size={13} /></div></button>) : <div className="side-task-empty"><Icon name="checkCircle" size={25} /><span>暂无{type === '全部' ? '' : type}待办</span></div>}</div>
+    </section>
+    <section className="panel daily-tasks" id="todo-panel" aria-label="待办中心"><div className="task-day-heading"><h2>待办中心<span>{base.length}</span></h2></div>
+    <div className="task-tabs" role="tablist" aria-label="待办类型">{['全部', '跟进', '项目', '报价'].map(value => <button role="tab" aria-selected={value === type} className={value === type ? 'selected' : ''} key={value} onClick={() => { setType(value); setPage(0); }}>{value}待办<span>{base.filter(item => value === '全部' || item.type === value).length}</span></button>)}</div>
+    <div className="side-task-list" ref={taskList}>{filtered.length ? filtered.slice(currentPage * 5, currentPage * 5 + 5).map(item => <button className="side-task" key={item.id} onClick={() => onTask(item)}><div className="side-task-meta"><Tag tone={item.type === '报价' ? 'purple' : item.type === '项目' ? 'teal' : 'blue'}>{item.type}</Tag><time className={item.date < TODAY ? 'overdue' : ''}>{item.date < TODAY ? '逾期 · ' : ''}{item.time}</time></div><strong>{item.title}</strong><div className="side-task-project">{findProject(item.projectId)?.name || '客户跟进'}</div><div className="side-task-owner"><span>{item.owner}</span><Icon name="chevron" size={13} /></div></button>) : <div className="side-task-empty"><Icon name="checkCircle" size={25} /><span>暂无{type === '全部' ? '' : type}待办</span></div>}</div>
     {filtered.length > 5 && <div className="task-pagination"><span>{currentPage * 5 + 1}–{Math.min((currentPage + 1) * 5, filtered.length)} / {filtered.length}</span><div><button className="icon-button previous" aria-label="待办上一页" disabled={currentPage === 0} onClick={() => setPage(currentPage - 1)}><Icon name="chevron" size={14} /></button><SmallButton icon="chevron" label="待办下一页" disabled={currentPage === maxPage} onClick={() => setPage(currentPage + 1)} /></div></div>}
     </section>
   </aside>;

@@ -18,16 +18,16 @@
 .department-select select,.member-select select{font-size:12px;color:#334155;max-width:none;border:0;background:none;padding:0}
 .department-select select{width:127px}
 .member-select select{width:82px}
-.workbench-columns{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,1fr);gap:16px;align-items:start}
-.workbench-primary{min-width:0;display:flex;flex-direction:column;gap:18px}
+.workbench-columns{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,1fr);grid-template-rows:auto auto auto;gap:18px 16px;align-items:start}
+.workbench-primary{min-width:0;display:grid;grid-template-rows:subgrid;grid-column:1;grid-row:1 / 4;row-gap:inherit;align-self:stretch}
 .panel{border-color:#e2e8f0;border-radius:9px;box-shadow:none}
 .section-heading{padding:16px 18px;display:flex;align-items:center;flex-direction:row}
 .section-heading h2{font-size:15px;color:#1f2937;font-weight:600}
-.metrics-section{padding:16px 18px 18px;background:#fff}
+.metrics-section{padding:16px 18px 18px;background:#fff;display:flex;flex-direction:column;align-self:stretch}
 .metrics-section>.section-heading{padding:0 0 14px;min-height:30px}
 .global-period{height:34px}
-.metric-cards{display:flex;flex-direction:column;gap:10px}
-.metric-card-row{display:grid;grid-template-columns:repeat(var(--card-count),minmax(0,1fr));gap:10px}
+.metric-cards{display:flex;flex-direction:column;gap:10px;flex:1}
+.metric-card-row{display:grid;grid-template-columns:repeat(var(--card-count),minmax(0,1fr));gap:10px;flex:1}
 .metric-card{min-width:0;background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px}
 .metric-card .metric-label{font-size:12px;color:#64748b;gap:4px;margin:0;line-height:24px;white-space:nowrap}
 .metric-card .metric-icon{display:grid;width:23px;height:23px;border-radius:6px;flex-shrink:0}
@@ -53,7 +53,6 @@
 .search-input input{width:150px;font-size:12px;color:#334155;background:none;border:0;padding:0}
 .search-input input::placeholder{color:#94a3b8}
 .board-manager{height:30px;border:1px solid #dce3ed;border-radius:6px;background:#fff;padding:0 7px;color:#475569;font-size:12px;max-width:140px}
-.track-controls{display:flex;border-left:1px solid #e2e8f0;padding-left:6px;gap:1px}
 .previous>svg{transform:rotate(180deg)}
 .pipeline-viewport{position:relative;margin:0 16px;background:#fff}
 .pipeline-viewport::before,.pipeline-viewport::after{content:'';position:absolute;top:0;bottom:15px;width:24px;z-index:4;pointer-events:none;opacity:0;transition:opacity .15s}
@@ -99,15 +98,17 @@
 .project-children .record-name{font-size:12px}
 .project-children .record-field{grid-template-columns:54px minmax(0,1fr)}
 .locate-notice{margin:0 18px 12px;color:#2e7bd6;background:#f0f6ff;padding:9px 11px;border-radius:5px;font-size:12px}
-.schedule-panel{align-self:stretch;min-width:0;display:flex;flex-direction:column}
-.schedule-panel>.section-heading{padding:16px 15px 9px;min-height:48px}
+.schedule-panel{align-self:stretch;min-width:0;display:grid;grid-template-rows:subgrid;grid-column:2;grid-row:1 / 4;row-gap:inherit}
+.calendar-panel{grid-row:1;min-width:0;align-self:stretch;display:flex;flex-direction:column}
+.calendar-panel>.section-heading{padding:16px 15px 9px;min-height:48px}
+.calendar-block{flex:1;display:flex;flex-direction:column}
 .calendar-actions{display:flex;gap:5px;align-items:center}
 .calendar-actions .text-button{font-size:12px}
 .calendar-collapse>svg{transform:rotate(180deg)}
 .schedule-panel .calendar-month{display:flex;justify-content:space-between;align-items:center;margin:0;padding:3px 15px 6px}
 .calendar-month strong{font-size:12px;font-weight:500;color:#475569}
 .calendar-month>div{display:flex;gap:1px}
-.schedule-panel .calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px 2px;padding:0 11px 15px}
+.schedule-panel .calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px 2px;padding:0 11px 15px;flex:1;align-items:center}
 .calendar-grid .weekday{font-size:11px;color:#94a3b8;text-align:center;line-height:26px}
 .calendar-grid .calendar-day{display:flex;align-items:center;justify-content:center;position:relative;flex-direction:column;height:29px;max-width:34px;width:100%;margin:0 auto;padding:0;font-size:12px;border-radius:5px;color:#475569}
 .calendar-day.muted-day{color:#c4ccd7}
@@ -115,15 +116,15 @@
 .calendar-grid .calendar-day.chosen{background:#2e7bd6;color:white;box-shadow:none}
 .calendar-day i{width:3px;height:3px;border-radius:50%;position:absolute;bottom:3px;background:#2e7bd6}
 .calendar-day.chosen i{background:#fff}
-.daily-tasks{border-top:1px solid #e2e8f0;flex:1;display:flex;flex-direction:column;min-height:0}
+.daily-tasks{grid-row:2 / 4;align-self:stretch;display:flex;flex-direction:column;min-height:0;min-width:0;container-type:inline-size}
 .task-day-heading{display:flex;justify-content:space-between;align-items:center;gap:5px;padding:15px 14px 10px}
-.task-day-heading h3{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#334155}
-.task-day-heading h3 span{font-size:11px;background:#edf3fb;padding:2px 5px;min-width:18px;text-align:center;border-radius:4px;color:#4778b4}
-.schedule-panel .bare-select{border:0;background:none;font-size:11px;color:#64748b;max-width:84px;padding:0}
-.schedule-panel .task-tabs{display:flex;gap:0;padding:0 12px;border-bottom:1px solid #edf1f5;justify-content:space-between;margin:0}
-.schedule-panel .task-tabs>button{font-size:12px;display:flex;align-items:center;gap:3px;padding:8px 1px 10px;color:#64748b;border-radius:0;background:none;white-space:nowrap}
+.task-day-heading h2{display:flex;align-items:center;gap:6px;font-size:15px;font-weight:600;color:#1f2937}
+.task-day-heading h2 span{font-size:11px;background:#edf3fb;padding:2px 5px;min-width:18px;text-align:center;border-radius:4px;color:#4778b4}
+.schedule-panel .task-tabs{display:flex;gap:0;padding:0 8px;border-bottom:1px solid #edf1f5;justify-content:space-between;margin:0}
+.schedule-panel .task-tabs>button{font-size:12px;display:flex;align-items:center;gap:3px;padding:8px 0 10px;color:#64748b;border-radius:0;background:none;white-space:nowrap}
 .schedule-panel .task-tabs>button>span{font-size:10px;padding:0;background:none;color:#94a3b8}
 .schedule-panel .task-tabs>button.selected{color:#2e7bd6;border-bottom:2px solid #2e7bd6}
+@container(max-width:300px){.schedule-panel .task-tabs>button{font-size:11px;gap:2px}}
 .side-task-list{padding:0 14px;max-height:490px;overflow-y:auto;scrollbar-width:thin}
 .pipeline-scroll,.pipeline-cards,.side-task-list{scrollbar-color:transparent transparent;scrollbar-gutter:stable;transition:scrollbar-color .18s ease-out}
 .pipeline-scroll[data-scrolling="true"],.pipeline-cards[data-scrolling="true"],.side-task-list[data-scrolling="true"]{scrollbar-color:#c4d1df transparent}

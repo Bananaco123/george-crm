@@ -310,7 +310,7 @@ function periodRange(period) {
   return { start: TODAY, end: TODAY };
 }
 
-/** 看板使用创建日期口径，与业务概览线的新建项目/新建商机共用同一周期。 */
+/** 看板使用创建日期口径，与业务概览的新建项目/新建商机共用同一周期。 */
 export function matchesPeriod(item, period = '本月') {
   const { start, end } = periodRange(period);
   const createdAt = item?.createdAt && dateKey(item.createdAt);
@@ -358,16 +358,16 @@ export function getMetrics(period = '本月', scope = '全部数据', filter = {
   const current = summarize(range, scope, filter);
   const previous = summarize(previousRange(period, range), scope, filter);
   const metadata = [
-    ['spend', '投放消耗', '元', 'chart', 'blue'],
-    ['enquiries', '询盘进线', '条', 'users', 'teal'],
-    ['transfers', '线索转派', '条', 'users', 'purple'],
-    ['customers', '新建客户', '位', 'users', 'blue'],
-    ['projects', '新建项目', '个', 'folder', 'purple'],
-    ['opportunities', '新建商机', '个', 'target', 'blue'],
-    ['quotes', '新建报价', '份', 'file', 'teal'],
+    ['spend', '投放消耗', '元', 'megaphone', 'blue'],
+    ['enquiries', '询盘进线', '条', 'messageIn', 'teal'],
+    ['transfers', '线索转派', '条', 'userTransfer', 'purple'],
+    ['customers', '新建客户', '位', 'userPlus', 'blue'],
+    ['projects', '新建项目', '个', 'folderPlus', 'purple'],
+    ['opportunities', '新建商机', '个', 'briefcasePlus', 'blue'],
+    ['quotes', '新建报价', '份', 'quoteSheet', 'teal'],
     ['visits', '到店客户', '位', 'shop', 'amber'],
-    ['revenue', '业绩金额', '元', 'target', 'blue'],
-    ['lost', '输单项目', '个', 'trend', 'red'],
+    ['revenue', '业绩金额', '元', 'banknote', 'blue'],
+    ['lost', '输单项目', '个', 'folderX', 'red'],
   ];
   return metadata.map(([key, label, unit, icon, color]) => ({
     key, label, value: current[key], unit, icon, color,
