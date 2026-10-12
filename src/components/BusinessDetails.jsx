@@ -41,10 +41,6 @@ function AmountCards({ values, compact = false }) {
   return <div className={`bd-amount-grid${compact ? ' bd-amount-grid-compact' : ''}`}>{values.map(({ label, value, icon, note }) => <div className="bd-amount-card" key={label} title={note}><span className="bd-amount-label">{icon && <Icon name={icon} size={15} />}{label}</span><strong>{amount(value)}</strong></div>)}</div>;
 }
 
-function AmountOverview({ title, values }) {
-  return <section className="bd-amount-overview"><h3>{title}</h3><AmountCards values={values} /></section>;
-}
-
 function opportunityAmounts(item) {
   return [
     { label: '订单金额', value: item.orderAmount, icon: 'quoteSheet' },
@@ -56,7 +52,7 @@ function opportunityAmounts(item) {
 function RelatedOpportunity({ item, onOpportunity, expanded, onToggle }) {
   const contentId = `bd-opportunity-${item.id}`;
   return <article className="bd-related-opportunity">
-    <div className="bd-related-opportunity-heading"><button className="bd-opportunity-name" onClick={() => onOpportunity(item)} title="打开商机详情">{item.name}<Icon name="arrow" size={15} /></button><button className="bd-expand-button" aria-label={`${expanded ? '收起' : '展开'} ${item.name}`} aria-expanded={expanded} aria-controls={contentId} onClick={() => onToggle(item.id)}><Icon name="chevronDown" size={17} /></button></div>
+    <div className="bd-related-opportunity-heading"><button className="bd-opportunity-name" onClick={() => onOpportunity(item)} title="打开商机详情"><span>{item.name}</span><Icon name="arrow" size={15} /></button><button className="bd-expand-button" aria-label={`${expanded ? '收起' : '展开'} ${item.name}`} aria-expanded={expanded} aria-controls={contentId} onClick={() => onToggle(item.id)}><Icon name="chevronDown" size={17} /></button></div>
     <div className="bd-related-meta"><span className="bd-record-id">{item.id}</span><StatusTag status={item.status} /><span className="bd-duration"><StageDurationTag item={item} /></span></div>
     {expanded && <div className="bd-related-content" id={contentId}>
       <Fields compact items={[
@@ -80,12 +76,12 @@ export function ProjectDetail({ item, onOpportunity, onConversation, collapsedOp
         ['所属部门', departmentName(item.departmentId)], ['创建于', <time dateTime={item.createdAt}>{item.createdAt}</time>],
         ['设计类型', displayDesignType(item.designType)], ['设计状态', <StatusTag status={displayDesignStatus(item.designStatus)} />],
       ]} />
+      <AmountCards values={[
+        { label: '项目金额', value: item.contribution, icon: 'folder', note: '已成交产品商机金额合计' },
+        { label: '成单金额', value: closedAmount, icon: 'checkCircle', note: '已成交产品商机的成单金额合计' },
+        { label: '实收金额', value: item.collected, icon: 'banknote', note: '产品商机实收金额合计' },
+      ]} />
     </IdentityCard>
-    <AmountOverview title="项目总览" values={[
-      { label: '项目金额', value: item.contribution, icon: 'folder', note: '已成交产品商机金额合计' },
-      { label: '成单金额', value: closedAmount, icon: 'checkCircle', note: '已成交产品商机的成单金额合计' },
-      { label: '实收金额', value: item.collected, icon: 'banknote', note: '产品商机实收金额合计' },
-    ]} />
     <section className="bd-opportunities-section"><div className="bd-section-heading"><h3>商机明细</h3><span>全部 {related.length} 个商机</span><span className="bd-opportunity-counts">已报价 {stats.quoted} · 已成交 {stats.won}</span></div><div className="bd-opportunities-list">{related.map(opportunity => <RelatedOpportunity key={opportunity.id} item={opportunity} onOpportunity={onOpportunity} expanded={!collapsedOpportunityIds.includes(opportunity.id)} onToggle={onToggleOpportunity} />)}</div>{!related.length && <div className="bd-empty">暂无关联商机</div>}</section>
   </div>;
 }
@@ -106,14 +102,12 @@ export function OpportunityDetail({ item, onProject, onConversation }) {
       <Fields items={[
         ['客户名称', project?.customer], ['国家地区', project?.region], ['方案经理', item.solutionManager], ['项目负责人', project?.pm],
         ['商机部门', item.opportunityDepartment], ['交付经理', project?.deliveryManager], ['商机类型', item.opportunityType], ['创建于', <time dateTime={item.createdAt}>{item.createdAt}</time>],
+        ['设计类型', displayDesignType(project?.designType)], ['设计状态', <StatusTag status={displayDesignStatus(project?.designStatus)} />],
+        ['报价情况', item.quoted ? '已创建报价' : '暂未报价'], ['报价日期', item.quotedAt ? <time dateTime={item.quotedAt}>{item.quotedAt}</time> : '—'],
       ]} />
+      <AmountCards values={opportunityAmounts(item)} />
+      {project && <button className="bd-linked-project" onClick={() => onProject(project)}><span className="bd-project-link-label">关联项目</span><span className="bd-project-link-copy"><strong>{project.name}</strong><span><ProjectLevelTag level={project.level} /><StatusTag status={getProjectStatus(project)} /><small>{project.id}</small></span></span><Icon name="chevron" size={17} /></button>}
     </IdentityCard>
-    <AmountOverview title="商机金额" values={opportunityAmounts(item)} />
     <StageProgress item={item} />
-    <section className="bd-card bd-design-section"><div className="bd-section-heading"><h3>设计与报价</h3></div><Fields items={[
-      ['设计类型', displayDesignType(project?.designType)], ['设计状态', <StatusTag status={displayDesignStatus(project?.designStatus)} />],
-      ['报价情况', item.quoted ? '已创建报价' : '暂未报价'], ['报价日期', item.quotedAt ? <time dateTime={item.quotedAt}>{item.quotedAt}</time> : '—'],
-    ]} /></section>
-    {project && <section className="bd-card bd-linked-project-section"><div className="bd-section-heading"><h3>关联项目</h3></div><button className="bd-linked-project" onClick={() => onProject(project)}><span className="bd-project-link-icon"><Icon name="folder" size={22} /></span><span className="bd-project-link-copy"><strong>{project.name}</strong><span><ProjectLevelTag level={project.level} /><StatusTag status={getProjectStatus(project)} /><small>{project.id}</small></span></span><Icon name="chevron" size={19} /></button></section>}
   </div>;
 }

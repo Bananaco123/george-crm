@@ -76,15 +76,18 @@ export default function App() {
   const [taskFocusRequest, setTaskFocusRequest] = useState(0);
   const [tasks, setTasks] = useStoredState(`george-crm-tasks-v1-${TODAY}`, initialTasks);
   const [dialog, setDialog] = useState(null);
+  const [secondaryDialog, setSecondaryDialog] = useState(null);
   const [locateId, setLocateId] = useState(null);
   const [toast, setToast] = useState('');
-  const closeDialog = React.useCallback(() => setDialog(null), []);
+  const closeDialog = React.useCallback(() => { setDialog(null); setSecondaryDialog(null); }, []);
+  const closeSecondaryDetail = React.useCallback(() => setSecondaryDialog(null), []);
   const filter = useMemo(() => ({ scope: '全部数据', departmentId, employeeId, period, dateRange, tasks }), [departmentId, employeeId, period, dateRange, tasks]);
   const members = EMPLOYEES.filter(item => departmentId === 'all' || item.departmentId === departmentId);
   const todayCount = tasks.filter(item => pending(item) && item.date === TODAY).length;
   useEffect(() => { if (!toast) return; const timer = setTimeout(() => setToast(''), 3500); return () => clearTimeout(timer); }, [toast]);
   const openBusinessDetail = next => {
-    const scrollTop = document.querySelector('.detail-drawer-body')?.scrollTop ?? 0;
+    const scrollTop = document.querySelector('.detail-drawer-primary .detail-drawer-body')?.scrollTop ?? 0;
+    setSecondaryDialog(null);
     setDialog(current => {
       if (!['project', 'opportunity', 'conversation'].includes(current?.type)) return { ...next, history: [] };
       const { history = [], ...previous } = current;
@@ -94,7 +97,22 @@ export default function App() {
   const openProject = item => { if (item) openBusinessDetail({ type: 'project', item }); };
   const openOpportunity = item => { if (item) openBusinessDetail({ type: 'opportunity', item }); };
   const openConversation = (context, mode, conversationId) => openBusinessDetail({ type: 'conversation', context, mode, conversationId });
-  const backBusinessDetail = () => setDialog(current => {
+  const backBusinessDetail = () => {
+    setSecondaryDialog(null);
+    setDialog(current => {
+      const history = current?.history ?? [];
+      return history.length ? { ...history.at(-1), history: history.slice(0, -1) } : null;
+    });
+  };
+  const openSecondaryOpportunity = item => setSecondaryDialog({ type: 'opportunity', item, history: [] });
+  const openSecondaryConversation = (context, mode, conversationId) => {
+    const scrollTop = document.querySelector('.detail-drawer-secondary .detail-drawer-body')?.scrollTop ?? 0;
+    setSecondaryDialog(current => {
+      const { history = [], ...previous } = current;
+      return { type: 'conversation', context, mode, conversationId, history: [...history, { ...previous, scrollTop }] };
+    });
+  };
+  const backSecondaryDetail = () => setSecondaryDialog(current => {
     const history = current?.history ?? [];
     return history.length ? { ...history.at(-1), history: history.slice(0, -1) } : null;
   });
@@ -104,12 +122,12 @@ export default function App() {
     return { ...current, collapsedOpportunityIds: collapsed.includes(id) ? collapsed.filter(item => item !== id) : [...collapsed, id] };
   });
   useEffect(() => {
-    const change = () => { setRoute(readNavigation()); setDialog(null); };
+    const change = () => { setRoute(readNavigation()); setDialog(null); setSecondaryDialog(null); };
     window.addEventListener('hashchange', change);
     return () => window.removeEventListener('hashchange', change);
   }, []);
   const navigate = (page, conditions = {}) => {
-    setDialog(null);
+    closeDialog();
     window.location.hash = navigationHash(page, conditions);
     setRoute({ page, conditions });
     window.scrollTo({ top: 0 });
@@ -121,7 +139,7 @@ export default function App() {
   const changeDestinationConditions = conditions => {
     window.history.replaceState(null, '', navigationHash(route.page, conditions));
     setRoute({ page: route.page, conditions });
-    setDialog(null);
+    closeDialog();
   };
   const openDestinationRecord = row => {
     const kind = row.detailKind;
@@ -133,7 +151,7 @@ export default function App() {
   };
   const navigateTask = item => navigate('todos', { taskId: item.id, date: item.date, taskType: item.type, name: item.title, owner: item.owner, status: item.status === 'completed' ? '已完成' : '待处理' });
   const locateProject = id => {
-    setDialog(null);
+    closeDialog();
     const project = getProject(id);
     if (project && !matchesPeriod(project, period, dateRange)) { setDialog({ type: 'project', item: project }); setToast('项目不在当前新建周期内，已打开项目详情'); return; }
     navigate('workbench');
@@ -166,6 +184,19 @@ export default function App() {
   const isBusinessDetail = ['project', 'opportunity', 'conversation'].includes(dialog?.type);
   const businessTitle = dialog?.type === 'project' ? '项目详情' : dialog?.type === 'opportunity' ? '商机详情' : '关联会话与 AI 销冠';
   const businessViewKey = dialog?.type === 'conversation' ? `conversation-${dialog.context.kind}-${dialog.context.id}` : `${dialog?.type}-${dialog?.item?.id}`;
+  const secondaryViewKey = secondaryDialog?.type === 'conversation' ? `conversation-${secondaryDialog.context.kind}-${secondaryDialog.context.id}` : `opportunity-${secondaryDialog?.item?.id}`;
+  const secondaryDetail = dialog?.type === 'project' && secondaryDialog ? {
+    title: secondaryDialog.type === 'conversation' ? '关联会话与 AI 销冠' : '商机详情',
+    viewKey: secondaryViewKey,
+    scrollTop: secondaryDialog.scrollTop,
+    conversation: secondaryDialog.type === 'conversation',
+    onClose: closeSecondaryDetail,
+    onBack: backSecondaryDetail,
+    backLabel: secondaryDialog.history?.length ? '返回商机详情' : '返回项目详情',
+    children: secondaryDialog.type === 'conversation'
+      ? <ConversationPanel key={secondaryViewKey} context={secondaryDialog.context} initialMode={secondaryDialog.mode} initialConversationId={secondaryDialog.conversationId} onBack={backSecondaryDetail} />
+      : <OpportunityDetail key={secondaryViewKey} item={secondaryDialog.item} onProject={closeSecondaryDetail} onConversation={openSecondaryConversation} />,
+  } : null;
   return <div className={`app-shell ${collapsed ? 'sidebar-is-collapsed' : ''}`}>
     <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} activePage={route.page} onNavigate={page => navigate(page)} />
     <div className="app-main">
@@ -194,9 +225,9 @@ export default function App() {
       </main>
       {route.page !== 'workbench' && <DestinationPage route={route} tasks={tasks} onBack={() => navigate('workbench')} onDetail={showDestinationDetail} onConditionsChange={changeDestinationConditions} onRecordDetail={openDestinationRecord} />}
     </div>
-    {isBusinessDetail && <DetailDrawer title={businessTitle} onClose={closeDialog} onBack={dialog.history?.length ? backBusinessDetail : undefined} viewKey={businessViewKey} scrollTop={dialog.scrollTop} conversation={dialog.type === 'conversation'}>
+    {isBusinessDetail && <DetailDrawer title={businessTitle} onClose={closeDialog} onBack={dialog.history?.length ? backBusinessDetail : undefined} viewKey={businessViewKey} scrollTop={dialog.scrollTop} conversation={dialog.type === 'conversation'} secondary={secondaryDetail}>
       {dialog.type === 'opportunity' && <OpportunityDetail key={businessViewKey} item={dialog.item} onProject={openProject} onConversation={openConversation} />}
-      {dialog.type === 'project' && <ProjectDetail key={businessViewKey} item={dialog.item} onOpportunity={openOpportunity} onConversation={openConversation} collapsedOpportunityIds={dialog.collapsedOpportunityIds} onToggleOpportunity={toggleDetailOpportunity} />}
+      {dialog.type === 'project' && <ProjectDetail key={businessViewKey} item={dialog.item} onOpportunity={openSecondaryOpportunity} onConversation={openConversation} collapsedOpportunityIds={dialog.collapsedOpportunityIds} onToggleOpportunity={toggleDetailOpportunity} />}
       {dialog.type === 'conversation' && <ConversationPanel key={businessViewKey} context={dialog.context} initialMode={dialog.mode} initialConversationId={dialog.conversationId} onBack={backBusinessDetail} />}
     </DetailDrawer>}
     {dialog && !isBusinessDetail && <Dialog title={dialogTitle} onClose={closeDialog} wide={['analysis', 'dormant'].includes(dialog.type)}>
