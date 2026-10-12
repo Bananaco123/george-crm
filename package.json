@@ -10,7 +10,7 @@
     "dev": "vite --configLoader native",
     "build": "vite build --configLoader native",
     "preview": "vite preview --configLoader native",
-    "test": "node --test src/data.test.mjs src/conversations.test.mjs",
+    "test": "node --test src/data.test.mjs src/conversations.test.mjs src/destinationData.test.mjs",
     "deploy": "node scripts/deploy.mjs"
   },
   "dependencies": {

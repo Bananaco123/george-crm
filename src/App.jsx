@@ -80,7 +80,7 @@ function RelatedConversations({ context, onOpen }) {
 
 function ProjectDetail({ item, onOpportunity, onConversation }) {
   const related = getOpps(item.id), stats = getProjectStats(item);
-  const fields = [['客户', item.customer], ['国家地区', item.region], ['负责人', item.pm], ['交付经理', item.deliveryManager], ['项目金额', `¥ ${money(item.contribution)}`], ['实收金额', `¥ ${money(item.collected)}`], ['创建日期', item.createdAt], ['设计状态', `${item.designType} · ${item.designStatus}`]];
+  const fields = [['客户', item.customer], ['国家地区', item.region], ['负责人', item.pm], ['交付经理', item.deliveryManager], ['项目金额', `¥ ${money(item.contribution)}`], ['实收金额', `¥ ${money(item.collected)}`], ['创建日期', item.createdAt], [item.designType === '暂无' ? '方案设计' : item.designType, <Badge color={item.designStatus === '暂无' ? 'slate' : item.designStatus === '已设计' ? 'teal' : 'purple'}>{item.designStatus === '暂无' ? '未发起' : item.designStatus}</Badge>]];
   return <>
     <div className="detail-summary"><Badge>{getProjectStatus(item)}</Badge><ProjectLevelTag level={item.level} /><span>{item.id}</span></div>
     <div className="detail-fields">{fields.map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}</div>
@@ -108,7 +108,7 @@ function OpportunityDetail({ item, onLocate, onProject, onConversation }) {
     <RelatedConversations context={{ kind: 'opportunity', id: item.id }} onOpen={onConversation} />
     <div className="related-project-heading"><h3 className="detail-section-title">所属项目</h3><button className="text-button" onClick={() => onLocate(project.id)}>看板定位</button></div>
     <button className="linked-project" onClick={() => onProject(project)}><span className="attention-icon blue"><Icon name="folder" size={21} /></span><span><strong>{project.name}</strong><small>{getProjectStatus(project)} · {getOpps(project.id).length} 个关联商机</small></span><span className="link-copy">查看详情 <Icon name="arrow" size={14} /></span></button>
-    <div className="detail-fields compact"><div><span>设计类型</span><strong>{project.designType}</strong></div><div><span>设计状态</span><strong>{project.designStatus}</strong></div></div>
+    <div className="detail-fields compact"><div><span>设计类型</span><strong>{project.designType === '暂无' ? '方案设计' : project.designType}</strong></div><div><span>设计状态</span><strong><Badge color={project.designStatus === '暂无' ? 'slate' : project.designStatus === '已设计' ? 'teal' : 'purple'}>{project.designStatus === '暂无' ? '未发起' : project.designStatus}</Badge></strong></div></div>
   </>;
 }
 
@@ -149,6 +149,25 @@ export default function App() {
     navigate(destination.page, destination.conditions);
   };
   const navigateProject = item => navigate('projects', { ...filterConditions(filter), projectId: item.id, name: item.name, level: item.level, stage: getProjectStatus(item) });
+  const navigateLinkedProject = id => {
+    const project = getProject(id);
+    if (!project) return;
+    const conditions = filterConditions(filter);
+    // 商机按方案经理筛选，关联项目按项目负责人筛选，不能沿用不适用的人员条件。
+    if (conditions.member !== 'all' && conditions.member !== project.responsibleEmployeeId) delete conditions.member;
+    if (!matchesPeriod(project, period, dateRange)) { delete conditions.start; delete conditions.end; delete conditions.period; }
+    navigate('projects', { ...conditions, projectId: project.id, name: project.name, level: project.level, stage: getProjectStatus(project) });
+  };
+  const changeDestinationConditions = conditions => {
+    window.history.replaceState(null, '', navigationHash(route.page, conditions));
+    setRoute({ page: route.page, conditions });
+    setDialog(null);
+  };
+  const openDestinationRecord = row => {
+    const kind = row.detailKind;
+    const item = kind === 'opportunity' ? opportunities.find(item => item.id === row.opportunityId) : kind === 'task' ? tasks.find(item => item.id === row.taskId) : kind === 'project' ? getProject(row.projectId) : null;
+    if (item) setDialog({ type: kind, item });
+  };
   const navigateOpportunity = item => navigate('opportunities', { ...filterConditions(filter), projectId: item.projectId, opportunityId: item.id, name: item.name, level: item.level, stage: item.status });
   const navigateTask = item => navigate('todos', { taskId: item.id, date: item.date, taskType: item.type, name: item.title, owner: item.owner, status: item.status === 'completed' ? '已完成' : '待处理' });
   const locateProject = id => {
@@ -198,14 +217,14 @@ export default function App() {
         <div className="workbench-columns">
           <div className="workbench-primary">
             <Metrics filter={filter} onNavigate={navigateMetric} />
-            <Board filter={filter} onProject={navigateProject} onOpportunity={navigateOpportunity} locateId={locateId} setLocateId={setLocateId} onLocate={id => navigateProject(getProject(id))} />
+            <Board filter={filter} onProject={navigateProject} onOpportunity={navigateOpportunity} locateId={locateId} setLocateId={setLocateId} onLocate={navigateLinkedProject} />
             <Attention count={dormantCustomers.length} onDormant={() => setDialog({ type: 'dormant' })} onSchedule={() => setDialog({ type: 'schedule' })} onAnalysis={() => setDialog({ type: 'analysis' })} />
           </div>
           <Schedule tasks={tasks} selectedDate={selectedDate} setSelectedDate={setSelectedDate} onTask={navigateTask} focusRequest={taskFocusRequest} />
         </div>
         <footer className="workbench-footer">演示数据 · 金额单位：人民币</footer>
       </main>
-      {route.page !== 'workbench' && <DestinationPage route={route} onBack={() => navigate('workbench')} onDetail={showDestinationDetail} />}
+      {route.page !== 'workbench' && <DestinationPage route={route} tasks={tasks} onBack={() => navigate('workbench')} onDetail={showDestinationDetail} onConditionsChange={changeDestinationConditions} onRecordDetail={openDestinationRecord} />}
     </div>
     {dialog && <Dialog title={dialogTitle} onClose={closeDialog} wide={['analysis', 'dormant'].includes(dialog.type)} className={dialog.type === 'conversation' ? 'conversation-dialog' : ''}>
       {dialog.type === 'opportunity' && <OpportunityDetail item={dialog.item} onLocate={locateProject} onProject={openProject} onConversation={openConversation} />}
@@ -215,7 +234,7 @@ export default function App() {
       {dialog.type === 'dormant' && <><div className="dormant-list">{dormantCustomers.map(customer => { const added = tasks.some(item => item.customerId === customer.id && pending(item)); return <article key={customer.id}><div className="dormant-avatar">{customer.name.slice(0, 1)}</div><div><h3>{customer.name}<Badge color="amber">{customer.days} 天未联系</Badge></h3><p>{customer.company} · 负责人 {customer.owner}</p><small>关注：{customer.interest}</small></div><button className={added ? 'secondary-button' : 'primary-button'} disabled={added} onClick={() => addFollowup(customer)}>{added ? '已添加待办' : '添加跟进'}</button></article>; })}{!dormantCustomers.length && <p className="dialog-intro">当前范围暂无沉睡客户</p>}</div><p className="detail-note">添加后会出现在本地工作台的待办与日历中，不会向客户发送消息。</p></>}
       {dialog.type === 'schedule' && <>{[{ title: '今日待办摘要', time: '每个工作日 09:00', description: '当天的跟进、项目与报价待办' }, { title: '逾期待办提醒', time: '每个工作日 16:30', description: '尚未处理的逾期事项' }, { title: '沉睡客户回访', time: '每周一 10:00', description: '长期未联系的客户名单' }].map(item => <div className="schedule-row" key={item.title}><span className="attention-icon blue"><Icon name="clock" size={20} /></span><div><strong>{item.title}</strong><p>{item.time} · 北京时间</p><small>{item.description}</small></div><Badge color="slate">未启用</Badge></div>)}<div className="info-callout"><Icon name="bell" size={18} /><span>当前为提醒计划预览，实际推送需接入任务服务和通知渠道。</span></div></>}
       {dialog.type === 'analysis' && <><p className="dialog-intro">以下为全部演示数据的规则分析，尚未接入实时 AI 服务。</p><div className="insight-card"><Badge color="purple">报价推进</Badge><h3>{opportunities.filter(item => item.status === '报价中').length} 个商机处于报价中</h3><p>确认客户反馈与报价版本，明确下一次沟通时间。</p></div><div className="insight-card"><Badge color="amber">成交衔接</Badge><h3>{opportunities.filter(item => item.status === '待下单').length} 个商机等待下单</h3><p>报价确认后，需由 ERP 收款达到备货标准并确定生产，才进入交付中。</p></div><div className="insight-card"><Badge color="blue">跟进提醒</Badge><h3>{tasks.filter(item => pending(item) && item.date < TODAY).length} 项待办已逾期</h3><p>检查联系计划和业务进度，跟进尚未获得反馈的事项。</p></div></>}
-      {dialog.type === 'help' && <><div className="help-list"><p><b>01</b><span><strong>部门与成员</strong>部门、成员与统计周期共同筛选业务概览和项目商机，项目商机按创建日期统计。右侧日历与待办保留独立的日期和类型筛选。</span></p><p><b>02</b><span><strong>项目商机</strong>切换商机视图或项目视图，按项目名称或客户搜索。看板整个内容区均可按住左右拖动，阶段条上也可使用滚轮横向浏览。单击卡片携带筛选条件跳转至对应模块，可继续查看关联详情。</span></p><p><b>03</b><span><strong>日历与待办</strong>在我的日历中选择日期，查看当天待办；待办中心可切换全部待办、跟进待办、项目待办和报价待办。</span></p></div><div className="info-callout"><Icon name="help" size={18} /><span>工作台提供业务概览与看板，其他模块展示跳转携带的筛选条件。全部业务数据用于演示，未连接实际客户、订单或通知系统。</span></div></>}
+      {dialog.type === 'help' && <><div className="help-list"><p><b>01</b><span><strong>部门与成员</strong>部门、成员与统计周期共同筛选业务概览和项目商机，项目商机按创建日期统计。右侧日历与待办保留独立的日期和类型筛选。</span></p><p><b>02</b><span><strong>项目商机</strong>切换商机视图或项目视图，按项目名称或客户搜索。看板整个内容区均可按住左右拖动，阶段条上也可使用滚轮横向浏览。单击卡片携带筛选条件跳转至对应模块，可继续查看关联详情。</span></p><p><b>03</b><span><strong>日历与待办</strong>在我的日历中选择日期，查看当天待办；待办中心可切换全部待办、跟进待办、项目待办和报价待办。</span></p></div><div className="info-callout"><Icon name="help" size={18} /><span>工作台提供业务概览与看板，其他模块使用通用示例列表展示筛选结果。全部业务数据用于演示，未连接实际客户、订单或通知系统。</span></div></>}
     </Dialog>}
     {toast && <div className="toast" role="status"><Icon name="checkCircle" size={17} />{toast}</div>}
   </div>;

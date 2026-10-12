@@ -17,7 +17,7 @@ function api(method, path, body) {
 }
 
 // Tests and build must succeed before any remote state changes.
-execFileSync(process.execPath, ['--test', 'src/data.test.mjs', 'src/conversations.test.mjs'], { cwd: root, stdio: 'inherit' });
+execFileSync(process.execPath, ['--test', 'src/data.test.mjs', 'src/conversations.test.mjs', 'src/destinationData.test.mjs'], { cwd: root, stdio: 'inherit' });
 execFileSync(process.execPath, ['scripts/run.mjs', 'build'], { cwd: root, stdio: 'inherit' });
 
 let parent;

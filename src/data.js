@@ -111,7 +111,7 @@ const projectRows = [
 
 // lostAt 是项目被手动标记输单的演示事件日期，与商机输单或商机关闭日期分别记录。
 export const projects = projectRows.map(([id, name, customer, owner, region, age, designType, designStatus, lost, lostAge = null], index) => ({
-  id, name, customer, owner, pm: owner, level: ['A', 'B', 'C'][index % 3], deliveryManager: ['王建', '陈涛', '陆远'][index % 3],
+  id, name, customer, owner, pm: owner, level: index % 6 === 5 ? 'D' : ['A', 'B', 'C'][index % 3], deliveryManager: ['王建', '陈涛', '陆远'][index % 3],
   ...responsibility(owner), region, createdAt: dayOffset(age), designType, designStatus, lost,
   lostAt: lost && lostAge !== null ? dayOffset(lostAge) : null,
 }));

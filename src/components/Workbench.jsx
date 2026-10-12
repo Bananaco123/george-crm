@@ -44,7 +44,7 @@ function openCard(event, item, onOpen) {
 
 function OpportunityCard({ item, onOpen, onLocate, nested = false }) {
   const project = findProject(item.projectId);
-  return <article className={`business-card opportunity-card ${nested ? 'nested-card' : ''}`} data-opportunity-id={item.id} onClick={event => openCard(event, item, onOpen)}>
+  return <article className={`business-card opportunity-card ${nested ? 'nested-card' : ''}`} data-stage={item.status} data-opportunity-id={item.id} onClick={event => openCard(event, item, onOpen)}>
     <button className="record-name" onClick={() => onOpen(item)}>{item.name}</button>
     <div className="record-tags"><span className="record-classification"><ProjectLevelTag level={project?.level} />{nested && <Tag tone={item.status === '已输单' ? 'red' : 'blue'}>{item.status}</Tag>}</span><StageDurationTag item={item} /></div>
     <dl className="record-fields">
@@ -61,10 +61,10 @@ function OpportunityCard({ item, onOpen, onLocate, nested = false }) {
 
 function ProjectCard({ project, expanded, toggle, highlighted, onOpen, onLocate, onProject }) {
   const related = projectOpportunities(project.id);
-  return <article className={`business-card project-card ${highlighted ? 'highlighted' : ''}`} data-project-id={project.id} onClick={event => openCard(event, project, onProject)}>
+  return <article className={`business-card project-card ${highlighted ? 'highlighted' : ''}`} data-stage={getProjectStatus(project)} data-project-id={project.id} onClick={event => openCard(event, project, onProject)}>
     <button className="record-name" onClick={() => onProject(project)}>{project.name}</button>
     <div className="record-tags"><ProjectLevelTag level={project.level} /></div>
-    <dl className="record-fields"><DataField label="客户">{project.customer}</DataField><DataField label="负责人">{project.pm}</DataField><DataField label="国家地区">{project.region}</DataField><DataField label="交付经理">{project.deliveryManager || project.owner}</DataField><DataField label="项目金额">¥ {amount(project.contribution)}</DataField><DataField label="实收金额">¥ {amount(project.collected)}</DataField><DataField label={project.designType === '暂无' ? '方案设计' : project.designType}>{project.designStatus === '暂无' ? '暂无' : <Tag tone={project.designStatus === '已设计' ? 'teal' : 'purple'}>{project.designStatus}</Tag>}</DataField></dl>
+    <dl className="record-fields"><DataField label="客户">{project.customer}</DataField><DataField label="负责人">{project.pm}</DataField><DataField label="国家地区">{project.region}</DataField><DataField label="交付经理">{project.deliveryManager || project.owner}</DataField><DataField label="项目金额">¥ {amount(project.contribution)}</DataField><DataField label="实收金额">¥ {amount(project.collected)}</DataField><DataField label={project.designType === '暂无' ? '方案设计' : project.designType}>{<Tag tone={project.designStatus === '暂无' ? 'slate' : project.designStatus === '已设计' ? 'teal' : 'purple'}>{project.designStatus === '暂无' ? '未发起' : project.designStatus}</Tag>}</DataField><DataField label="创建于"><time dateTime={project.createdAt}>{project.createdAt}</time></DataField></dl>
     <button className={`expand-opps ${expanded ? 'expanded' : ''}`} aria-expanded={expanded} onClick={() => toggle(project.id)}><span>关联商机 <b>{related.length}</b></span><Icon name="chevronDown" size={14} /></button>
     {expanded && <div className="project-children">{related.map(item => <OpportunityCard key={item.id} item={item} onOpen={onOpen} onLocate={onLocate} nested />)}</div>}
   </article>;
@@ -177,7 +177,7 @@ export function Board({ filter, onOpportunity, onProject, locateId, setLocateId,
       <div className={`pipeline-scroll ${dragging ? 'is-dragging' : ''}`} ref={track} tabIndex={0} aria-label={`${mode === 'project' ? '项目' : '商机'}阶段进度图`} onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag} onClickCapture={cancelDragClick} onPointerLeave={() => { if (!drag.current?.moved) drag.current = null; }} onLostPointerCapture={() => { drag.current = null; setDragging(false); }}>
         <div className="pipeline-grid" style={{ '--stage-count': stages.length, '--visible-stages': Math.min(stages.length, 4.5) }}>{stages.map(stage => {
           const records = items.filter(item => (mode === 'project' ? getProjectStatus(item) : item.status) === stage);
-          return <section className={`pipeline-column ${stage === '已输单' ? 'loss-stage' : ''}`} key={stage}>
+          return <section className={`pipeline-column ${stage === '已输单' ? 'loss-stage' : ''}`} key={stage} data-stage={stage}>
             <div className="pipeline-step" title="按住拖动，或滚动滚轮横向浏览"><span className="step-name">{stage}</span><span className="step-total">{records.length}</span></div>
             <div className="pipeline-cards">{records.map(item => mode === 'project' ? <ProjectCard key={item.id} project={item} expanded={expanded.includes(item.id)} toggle={toggle} highlighted={locateId === item.id} onOpen={onOpportunity} onLocate={onLocate} onProject={onProject} /> : <OpportunityCard key={item.id} item={item} onOpen={onOpportunity} onLocate={onLocate} />)}</div>
           </section>;

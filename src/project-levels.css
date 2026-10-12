@@ -1,0 +1,8 @@
+/* 等级语义固定：每一等级均有独立的字母、描边和底色。 */
+.project-level-tag[data-level]{gap:4px;padding:3px 7px;border-radius:5px;font-size:10px;line-height:1.3;font-weight:500}
+.project-level-tag[data-level] b{font-size:11px;font-weight:700}
+.project-level-tag[data-level="A"]{color:#ac4d5b;border-color:#efd0d7;background:#fff0f3}
+.project-level-tag[data-level="B"]{color:#916718;border-color:#ecdcac;background:#fff7e3}
+.project-level-tag[data-level="C"]{color:#3c6ba7;border-color:#ccdef4;background:#edf4ff}
+.project-level-tag[data-level="D"]{color:#746090;border-color:#ddd3ee;background:#f3eefb}
+.project-level-tag[data-level="unknown"]{color:#788594;border-color:#e0e5eb;background:#f4f6f8}

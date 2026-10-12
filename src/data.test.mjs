@@ -324,8 +324,8 @@ const offsetDate = (offset, from = TODAY) => {
 };
 
 test('项目等级由商机继承，近30天各阶段样本充足且全部成交由已赢产品真实聚合', () => {
-  assert.ok(projects.every(item => ['A', 'B', 'C'].includes(item.level)));
-  assert.deepEqual(new Set(projects.map(item => item.level)), new Set(['A', 'B', 'C']));
+  assert.ok(projects.every(item => ['A', 'B', 'C', 'D'].includes(item.level)));
+  assert.deepEqual(new Set(projects.map(item => item.level)), new Set(['A', 'B', 'C', 'D']));
   assert.ok(opportunities.every(item => item.level === projects.find(project => project.id === item.projectId).level));
   const currentProjects = projects.filter(item => matchesPeriod(item, '近30天'));
   for (const stage of PROJECT_STAGES) assert.ok(currentProjects.filter(item => getProjectStatus(item) === stage).length >= 3, stage);

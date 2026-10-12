@@ -1,0 +1,91 @@
+.destination-table-workspace .destination-list-panel {
+  max-width: none;
+  padding: 0;
+  overflow: visible;
+  border-color: #e0e8f2;
+  border-radius: 12px;
+}
+
+.destination-table-workspace .destination-heading { margin-bottom: 20px; }
+.destination-list-toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 20px 20px 13px; }
+.destination-search { display: flex; align-items: center; gap: 9px; min-width: 200px; flex: 1 1 235px; height: 38px; padding: 0 12px; border: 1px solid #d9e4f3; border-radius: 9px; color: #91a3bb; }
+.destination-search:focus-within { border-color: #3785ff; box-shadow: 0 0 0 3px #e3efff; }
+.destination-search input { width: 100%; min-width: 0; padding: 0; border: 0; outline: 0; background: transparent; font-size: 12px; color: #385372; }
+.destination-search input::placeholder { color: #94a4ba; }
+.destination-search > button { display: inline-flex; align-items: center; justify-content: center; color: #91a3bb; flex: none; padding: 3px; }
+.destination-list-toolbar .destination-department { --filter-width: 168px; }
+.destination-list-toolbar .destination-member { --filter-width: 132px; }
+.destination-list-toolbar .destination-level { --filter-width: 108px; }
+.destination-list-toolbar .destination-status { --filter-width: 150px; }
+.destination-list-toolbar .filter-dropdown-trigger { font-size: 12px; font-weight: 500; }
+.destination-list-toolbar .destination-level .filter-dropdown-trigger { gap: 6px; padding-inline: 10px; }
+.destination-reset { display: inline-flex; align-items: center; gap: 5px; height: 36px; padding: 0 6px; color: #6983a4; font-size: 12px; white-space: nowrap; }
+.destination-reset:hover { color: #287be2; }
+.destination-date-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 0 20px 16px; }
+.destination-filter-label { flex: none; font-size: 12px; color: #8294ad; }
+.destination-date-fields { display: flex; align-items: center; gap: 9px; }
+.destination-date-fields input { height: 33px; width: 140px; border: 1px solid #dce6f2; border-radius: 7px; padding: 0 9px; color: #526b89; background: #fff; font-size: 12px; font-variant-numeric: tabular-nums; }
+.destination-date-fields input:focus { border-color: #3785ff; box-shadow: 0 0 0 2px #e3efff; outline: none; }
+.destination-date-fields input[aria-invalid='true'] { border-color: #df927b; }
+.destination-date-fields > span { color: #96a7bc; font-size: 12px; }
+.destination-date-clear { display: inline-flex; padding: 4px; color: #8295b0; border-radius: 4px; }
+.destination-date-clear:hover { background: #edf3fb; }
+.destination-date-error { font-size: 11px; color: #c26c50; }
+.destination-source { margin-left: auto; padding: 4px 9px; border-radius: 5px; background: #f2f6fc; color: #768eae; font-size: 11px; }
+.destination-active-filters { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; padding: 12px 20px; border-top: 1px solid #edf1f7; background: #fbfcfe; }
+.destination-active-filters > .destination-filter-label { margin-right: 5px; }
+.destination-filter-chip { display: inline-flex; align-items: center; gap: 5px; min-width: 0; max-width: 245px; padding: 4px 6px 4px 8px; background: #edf3fc; border: 1px solid #e2ebf8; border-radius: 5px; color: #6381a7; font-size: 11px; line-height: 1.6; }
+.destination-filter-chip > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.destination-filter-chip > button { display: inline-flex; flex: none; padding: 1px; color: #8399b9; border-radius: 3px; }
+.destination-filter-chip > button:hover { color: #2d75cc; background: #dce9fc; }
+.destination-results-heading { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 17px 20px 13px; border-top: 1px solid #e9eef6; }
+.destination-results-heading > div { display: flex; align-items: center; gap: 10px; }
+.destination-results-heading strong { font-size: 13px; color: #344e6f; font-weight: 600; }
+.destination-sample-label { border: 1px solid #e4eaf2; color: #92a2b7; padding: 2px 6px; font-size: 10px; border-radius: 4px; line-height: 1.5; }
+.destination-detail-link { display: inline-flex; align-items: center; gap: 5px; color: #4c81c3; font-size: 12px; }
+.destination-table-scroll { overflow-x: auto; scrollbar-width: thin; scrollbar-color: #cbd8e9 transparent; }
+.destination-record-table { width: 100%; border-collapse: collapse; min-width: 880px; text-align: left; }
+.destination-record-table th { padding: 13px 14px; white-space: nowrap; background: #f6f8fc; border-top: 1px solid #edf1f7; border-bottom: 1px solid #e8eef6; color: #7d90aa; font-size: 12px; font-weight: 500; }
+.destination-record-table th:first-child, .destination-record-table td:first-child { padding-left: 20px; }
+.destination-record-table th:last-child, .destination-record-table td:last-child { padding-right: 20px; }
+.destination-record-table td { padding: 16px 14px; border-bottom: 1px solid #edf1f7; color: #5c728e; font-size: 12px; line-height: 1.7; }
+.destination-record-table tbody tr:last-child td { border-bottom: none; }
+.destination-record-table tbody tr:hover { background: #fbfdff; }
+.destination-record-table .destination-name-column { min-width: 205px; width: 24%; }
+.destination-record-table .destination-grade-column { min-width: 70px; }
+.destination-record-table .destination-date-column { min-width: 110px; }
+.destination-record-table .destination-amount-column { min-width: 120px; text-align: right; }
+.destination-record-name > button { display: flex; align-items: center; justify-content: space-between; gap: 7px; width: 100%; text-align: left; font-size: 12px; color: #386baa; font-weight: 500; line-height: 1.7; }
+.destination-record-name > button svg { opacity: 0; flex: none; color: #6997cc; transition: opacity .15s; }
+.destination-record-name > button:hover { color: #1975d5; }
+.destination-record-name > button:hover svg, .destination-record-name > button:focus-visible svg { opacity: 1; }
+.destination-record-name > span { color: #365476; font-weight: 500; }
+.destination-record-table .project-level-tag { min-width: 40px; font-size: 11px; }
+.destination-status-tag { display: inline-flex; align-items: center; white-space: nowrap; padding: 3px 7px; border-radius: 4px; font-size: 11px; line-height: 1.5; }
+.destination-status-tag.blue { background: #eef4fd; color: #5986c0; }
+.destination-status-tag.green { background: #edf8f2; color: #4b9672; }
+.destination-status-tag.teal { background: #edf7f6; color: #57988e; }
+.destination-status-tag.muted-red { background: #fcf0f0; color: #b57a7c; }
+.destination-record-table .destination-record-date { color: #879ab2; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.destination-record-table .destination-record-amount { text-align: right; color: #526b8a; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.destination-empty { min-height: 245px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 9px; color: #9db0c9; padding: 28px 10px; }
+.destination-empty strong { color: #647d9c; font-weight: 500; font-size: 13px; }
+.destination-empty > span { color: #9babc0; font-size: 12px; }
+.destination-empty .secondary-button { margin-top: 5px; }
+.destination-pagination { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #e9eef6; padding: 14px 20px; color: #8d9fb7; font-size: 11px; }
+.destination-page-size { padding-left: 16px; }
+.destination-pagination > div { display: flex; align-items: center; gap: 13px; }
+.destination-pagination > div > span { color: #647d9d; font-variant-numeric: tabular-nums; }
+.destination-pagination i { font-style: normal; color: #b2bfd1; margin: 0 9px; }
+.destination-pagination button { display: grid; place-items: center; width: 28px; height: 28px; border: 1px solid #e1e8f2; border-radius: 5px; color: #6f8aac; background: #fff; }
+.destination-pagination button:hover:not(:disabled) { background: #eff5ff; border-color: #bfd5f4; }
+.destination-pagination button:disabled { color: #c0ccdc; border-color: #edf1f6; cursor: default; }
+
+@media (max-width: 1450px) {
+  .destination-list-toolbar { gap: 8px; }
+  .destination-list-toolbar .destination-department { --filter-width: 154px; }
+  .destination-list-toolbar .destination-member { --filter-width: 116px; }
+  .destination-list-toolbar .destination-status { --filter-width: 125px; }
+  .destination-list-toolbar .destination-level { --filter-width: 100px; }
+  .destination-record-table th, .destination-record-table td { padding-left: 11px; padding-right: 11px; }
+}
