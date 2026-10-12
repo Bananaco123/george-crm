@@ -61,7 +61,10 @@ const shanghaiDate = new Intl.DateTimeFormat('en-CA', {
 });
 
 export function dateKey(date) {
-  if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) return date;
+  if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    const parsed = new Date(`${date}T00:00:00Z`);
+    return Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== date ? '' : date;
+  }
   const parsed = date instanceof Date ? date : new Date(date);
   if (Number.isNaN(parsed.getTime())) return '';
   const parts = shanghaiDate.formatToParts(parsed);
@@ -100,11 +103,15 @@ const projectRows = [
   ['P-20261011', '沙特 Noura Villa · 别墅', 'Noura Villa', '沈佳宁', '沙特', -15, '暂无', '暂无', true, 0],
   ['P-20261012', '澳洲 Thomas · 悉尼公寓柜体', 'Thomas King', '林悦', '澳大利亚', -4, '暂无', '暂无', false],
   ['P-20261013', '美国 Morgan · 精品酒店客房', 'Morgan Lee', '周予安', '美国', -1, '独立设计服务', '已设计', false],
+  ['P-20261014', '迪拜 Ahmed · 海景公寓', 'Ahmed Al-Rashid', '陈嘉慧', '阿联酋', -25, '方案设计', '设计中', false],
+  ['P-20261015', '新西兰 Sophie · 奥克兰海滨住宅', 'Sophie Turner', '沈佳宁', '新西兰', -26, '方案设计', '已设计', false],
+  ['P-20261016', '加拿大 William · 温哥华联排住宅', 'William Brown', '许知远', '加拿大', -23, '方案设计', '已设计', false],
+  ['P-20261017', '荷兰 Lucas · 品牌展厅', 'Lucas van Dijk', '周予安', '荷兰', -22, '方案设计', '已设计', true, -4],
 ];
 
 // lostAt 是项目被手动标记输单的演示事件日期，与商机输单或商机关闭日期分别记录。
 export const projects = projectRows.map(([id, name, customer, owner, region, age, designType, designStatus, lost, lostAge = null], index) => ({
-  id, name, customer, owner, pm: owner, deliveryManager: ['王建', '陈涛', '陆远'][index % 3],
+  id, name, customer, owner, pm: owner, level: ['A', 'B', 'C'][index % 3], deliveryManager: ['王建', '陈涛', '陆远'][index % 3],
   ...responsibility(owner), region, createdAt: dayOffset(age), designType, designStatus, lost,
   lostAt: lost && lostAge !== null ? dayOffset(lostAge) : null,
 }));
@@ -145,6 +152,16 @@ const opportunityRows = [
   ['OP-032', 11, '儿童房软装', 'product', '已输单', 46000, true, -3, -2, -1, -1],
   ['OP-033', 12, '酒店客房设计', 'design', '已完成', 48000, true, -1, -1, 0, 0],
   ['OP-034', 12, '客房家具采购', 'product', '待接受', 320000, false, -1, null, null, -1],
+  ['OP-059', 13, '阳台休闲区家具', 'product', '洽谈中', 86000, false, -24, null, null, -15],
+  ['OP-060', 13, '主卧衣帽间定制', 'product', '报价中', 186000, true, -23, -12, null, -12],
+  ['OP-061', 13, '开放式厨房定制', 'product', '待下单', 228000, true, -24, -17, null, -11],
+  ['OP-062', 13, '客厅系统门窗', 'product', '交付中', 168000, true, -25, -20, -10, -10],
+  ['OP-063', 14, '全屋固定家具', 'product', '已完成', 328000, true, -25, -22, -18, -3],
+  ['OP-064', 14, '客厅窗帘及轨道', 'product', '已完成', 52000, true, -24, -21, -16, -2],
+  ['OP-065', 15, '厨房及餐厅柜体', 'product', '交付中', 256000, true, -22, -18, -12, -12],
+  ['OP-066', 15, '客厅成品家具', 'product', '已完成', 138000, true, -21, -17, -14, -1],
+  ['OP-067', 16, '展厅陈列柜', 'product', '已输单', 196000, true, -21, -15, -4, -4],
+  ['OP-068', 16, '品牌接待区家具', 'product', '已输单', 78000, true, -20, -14, -4, -4],
 ];
 
 // 每个阶段准备独立采购范围，仅补足本月不足四条的阶段；历史样本与已有 ID 保留。
@@ -195,7 +212,7 @@ export const opportunities = [...opportunityRows, ...supplementaryRows].map(([id
   const stageEnteredAt = latestDate(createdAt, quotedAt, closedAt, dayOffset(stageAge));
   return {
     id, projectId: project.id, name: `${project.customer.split(' ')[0]} · ${name}`, category, owner: project.owner,
-    status, amount, quoted, createdAt, stageEnteredAt,
+    status, amount, quoted, quoteAmount: quoted ? amount : null, createdAt, stageEnteredAt, level: project.level,
     opportunityType: category === 'design' ? '设计服务' : id === 'OP-011' ? '增补订单' : '产品订单',
     orderAmount: hasOrder ? amount : null, closedAmount: won ? amount : 0,
     receivedAmount: hasReceipt ? (won ? Math.round(amount * (status === '已完成' ? 1 : 0.6)) : 0) : null,
@@ -207,6 +224,18 @@ export const opportunities = [...opportunityRows, ...supplementaryRows].map(([id
 
 const isCountedProduct = opportunity => opportunity.category === 'product' && !['待接受', '已拒绝'].includes(opportunity.status);
 const isWon = opportunity => ['交付中', '已完成'].includes(opportunity.status);
+
+// 已收款按成交日首款、完成日尾款拆分，事件之和严格等于商机实收，不从预计金额产生收款。
+export const receiptEvents = opportunities.flatMap(item => {
+  if (!isWon(item) || !(item.receivedAmount > 0)) return [];
+  const first = item.status === '已完成' ? Math.round(item.receivedAmount * 0.6) : item.receivedAmount;
+  const base = { opportunityId: item.id, projectId: item.projectId, owner: item.solutionManager,
+    responsibleEmployeeId: item.responsibleEmployeeId, departmentId: item.departmentId, solutionManager: item.solutionManager };
+  return [
+    { ...base, id: `${item.id}-receipt-1`, date: item.closedAt, amount: first },
+    ...(first < item.receivedAmount ? [{ ...base, id: `${item.id}-receipt-2`, date: item.stageEnteredAt, amount: item.receivedAmount - first }] : []),
+  ];
+});
 
 for (const project of projects) {
   const products = opportunities.filter(item => item.projectId === project.id && isCountedProduct(item));
@@ -286,38 +315,52 @@ export function hydrateStoredTasks(saved) {
   return [...base, ...additions];
 }
 
-const owners = ['林悦', '周予安', '许知远', '沈佳宁'];
+const owners = ['林悦', '周予安', '许知远', '沈佳宁', '陈嘉慧'];
 
 // 营销与客户类指标使用同一批带日期、负责人的演示事件汇总。
-const activityEvents = Array.from({ length: 66 }, (_, day) => {
+const activityEvents = Array.from({ length: 120 }, (_, day) => {
   const date = dayOffset(-day);
   return owners.map((owner, index) => ({
     date, owner, ...responsibility(owner),
     spend: 560 + ((day * 173 + index * 257) % 1300),
     enquiries: 5 + ((day * 3 + index * 7) % 16),
-    transfers: 2 + ((day + index * 3) % 9),
+    transferGrades: { A: 1 + ((day + index) % 3), B: 1 + ((day + index * 2) % 4), C: (day + index * 3) % 4 },
     customers: 1 + ((day * 2 + index) % 6),
     visits: (day + index * 2) % 5,
   }));
-}).flat();
+}).flat().map(event => ({ ...event, transfers: Object.values(event.transferGrades).reduce((sum, value) => sum + value, 0) }));
 
-function periodRange(period) {
+/** 日期闭区间。无效自由日期与未知周期返回 null，调用方不得退回全量。 */
+export function getPeriodRange(period = '近30天', customRange) {
+  if (period === '自由筛选') {
+    const start = customRange?.start, end = customRange?.end;
+    if (typeof start !== 'string' || typeof end !== 'string'
+      || !/^\d{4}-\d{2}-\d{2}$/.test(start) || !/^\d{4}-\d{2}-\d{2}$/.test(end)
+      || dateKey(start) !== start || dateKey(end) !== end || start > end) return null;
+    return { start, end };
+  }
+  if (period === '昨日') return { start: dayOffset(-1), end: dayOffset(-1) };
+  if (period === '今日') return { start: TODAY, end: TODAY };
+  if (period === '近7天') return { start: dayOffset(-6), end: TODAY };
+  if (period === '近30天') return { start: dayOffset(-29), end: TODAY };
   if (period === '本周') {
     const weekday = new Date(`${TODAY}T12:00:00+08:00`).getUTCDay();
     return { start: dayOffset(-((weekday + 6) % 7)), end: TODAY };
   }
   if (period === '本月') return { start: `${TODAY.slice(0, 7)}-01`, end: TODAY };
-  return { start: TODAY, end: TODAY };
+  return null;
 }
 
 /** 看板使用创建日期口径，与业务概览的新建项目/新建商机共用同一周期。 */
-export function matchesPeriod(item, period = '本月') {
-  const { start, end } = periodRange(period);
+export function matchesPeriod(item, period = '近30天', customRange) {
+  const range = getPeriodRange(period, customRange);
+  if (!range) return false;
   const createdAt = item?.createdAt && dateKey(item.createdAt);
-  return Boolean(createdAt) && createdAt >= start && createdAt <= end;
+  return Boolean(createdAt) && createdAt >= range.start && createdAt <= range.end;
 }
 
 function previousRange(period, range) {
+  if (!range) return null;
   if (period === '本周') return { start: dayOffset(-7, range.start), end: dayOffset(-7, range.end) };
   if (period === '本月') {
     const current = new Date(`${TODAY}T12:00:00+08:00`);
@@ -328,49 +371,70 @@ function previousRange(period, range) {
     const prefix = dateKey(new Date(Date.UTC(year, month - 1, 1, 4))).slice(0, 7);
     return { start: `${prefix}-01`, end: `${prefix}-${String(comparisonDay).padStart(2, '0')}` };
   }
-  return { start: dayOffset(-1), end: dayOffset(-1) };
+  const days = Math.round((new Date(`${range.end}T00:00:00Z`) - new Date(`${range.start}T00:00:00Z`)) / 86400000) + 1;
+  return { start: dayOffset(-days, range.start), end: dayOffset(-1, range.start) };
 }
 
 function summarize(range, scope, filter) {
-  const within = date => Boolean(date) && date >= range.start && date <= range.end;
+  const within = date => Boolean(range && date) && date >= range.start && date <= range.end;
   const visible = item => matchesFilters(item, { ...filter, scope });
   const events = activityEvents.filter(item => visible(item) && within(item.date));
   const sum = key => events.reduce((total, item) => total + item[key], 0);
+  const quoted = opportunities.filter(item => visible(item) && item.quoted && within(item.quotedAt));
+  const won = opportunities.filter(item => visible(item) && isWon(item) && within(item.closedAt));
+  const taskSource = Array.isArray(filter.tasks) ? filter.tasks : tasks;
+  const scheduled = taskSource.filter(item => visible(item) && within(item.date) && item.status !== 'completed');
   return {
     spend: sum('spend'), enquiries: sum('enquiries'), transfers: sum('transfers'), customers: sum('customers'),
     projects: projects.filter(item => visible(item) && within(item.createdAt)).length,
     opportunities: opportunities.filter(item => visible(item) && within(item.createdAt)).length,
-    quotes: opportunities.filter(item => visible(item) && item.quoted && within(item.quotedAt)).length,
+    quotes: quoted.length,
     visits: sum('visits'),
-    revenue: opportunities.filter(item => visible(item) && isWon(item) && within(item.closedAt)).reduce((total, item) => total + item.closedAmount, 0),
+    revenue: won.reduce((total, item) => total + item.closedAmount, 0),
     lost: projects.filter(item => visible(item) && item.lost && within(item.lostAt)).length,
+    followups: scheduled.filter(item => item.type === '跟进').length,
+    overdue: scheduled.filter(item => item.date < TODAY).length,
+    won: won.length,
+    receipts: receiptEvents.filter(item => visible(item) && within(item.date)).reduce((total, item) => total + item.amount, 0),
+    quoteAmount: quoted.reduce((total, item) => total + (item.quoteAmount ?? 0), 0),
+    gradeBreakdown: Object.fromEntries(['A', 'B', 'C'].map(level => [level, events.reduce((total, item) => total + item.transferGrades[level], 0)])),
   };
 }
 
+export const DEFAULT_METRIC_KEYS = ['spend', 'enquiries', 'transfers', 'customers', 'visits', 'projects', 'opportunities', 'quotes', 'revenue', 'lost'];
+
+export const METRIC_CATALOG = [
+  ['spend', '投放消耗', '元', 'megaphone', 'blue', '按投放发生日期汇总所选范围的广告消耗，单位为人民币。'],
+  ['enquiries', '询盘进线', '条', 'messageIn', 'teal', '按进线发生日期统计所选范围的新询盘记录。'],
+  ['transfers', '线索转派', '条', 'userTransfer', 'purple', '按转派发生日期统计线索；A、B、C 等级来自同批转派记录，合计等于转派总量。'],
+  ['customers', '新建客户', '位', 'userPlus', 'blue', '按客户创建日期统计所选范围的新建客户记录。'],
+  ['visits', '到店客户', '位', 'shop', 'amber', '按实际到店日期统计所选范围的到店客户记录。'],
+  ['projects', '新建项目', '个', 'folderPlus', 'purple', '按项目创建日期统计，由项目负责人及所属部门确定数据范围。'],
+  ['opportunities', '新建商机', '个', 'briefcasePlus', 'blue', '按商机创建日期统计全部状态的商机，由方案经理及所属部门确定数据范围。'],
+  ['quotes', '新建报价', '份', 'quoteSheet', 'teal', '按报价创建日期统计已报价商机，每个商机计一份报价。'],
+  ['revenue', '业绩金额', '元', 'banknote', 'blue', '按成交日期汇总交付中及已完成商机的成交金额，包含设计服务，不重复累计项目金额。'],
+  ['lost', '输单项目', '个', 'folderX', 'red', '按项目手动标记输单日期统计，每项目计一次，商机输单不自动计入。'],
+  ['followups', '跟进待办', '项', 'phone', 'blue', '按计划日期统计所选范围内目前未完成的跟进待办，不代表历史时点的待办存量。'],
+  ['overdue', '逾期待办', '项', 'clock', 'red', '按计划日期统计所选范围内目前未完成、且计划日期早于北京时间今日的待办。'],
+  ['won', '成交商机', '个', 'checkCircle', 'teal', '按成交日期统计目前处于交付中或已完成的商机数量，包含设计服务。'],
+  ['receipts', '实收金额', '元', 'banknote', 'teal', '按演示收款入账日期汇总首款及尾款；收款事件合计等于商机实收金额，不计预计金额。'],
+  ['quoteAmount', '报价金额', '元', 'quoteSheet', 'purple', '按报价创建日期汇总已报价商机的报价金额，包含设计服务，不等同于成交或实收金额。'],
+].map(([key, label, unit, icon, color, description]) => ({ key, label, unit, icon, color, description }));
+
 /**
- * change 对比上一等长统计进度：昨日 / 上周同期 / 上月同期。
+ * 新周期 change 对比前一个连续等长区间；本周、本月保留历史同期口径兼容。
  * 基期为 0 时返回 null，避免虚构百分比；UI 应显示“—”或“暂无对比”。
  * 业绩金额汇总当期成交的产品与独立设计服务商机，不重复累计项目金额。
  * 新建商机按创建日期统计所有商机；输单项目仅按项目手动输单事件统计，每个项目计一次。
  */
-export function getMetrics(period = '本月', scope = '全部数据', filter = {}) {
-  const range = periodRange(period);
+export function getMetrics(period = '近30天', scope = '全部数据', filter = {}) {
+  const range = getPeriodRange(period, filter.dateRange);
+  const comparisonRange = previousRange(period, range);
   const current = summarize(range, scope, filter);
-  const previous = summarize(previousRange(period, range), scope, filter);
-  const metadata = [
-    ['spend', '投放消耗', '元', 'megaphone', 'blue'],
-    ['enquiries', '询盘进线', '条', 'messageIn', 'teal'],
-    ['transfers', '线索转派', '条', 'userTransfer', 'purple'],
-    ['customers', '新建客户', '位', 'userPlus', 'blue'],
-    ['projects', '新建项目', '个', 'folderPlus', 'purple'],
-    ['opportunities', '新建商机', '个', 'briefcasePlus', 'blue'],
-    ['quotes', '新建报价', '份', 'quoteSheet', 'teal'],
-    ['visits', '到店客户', '位', 'shop', 'amber'],
-    ['revenue', '业绩金额', '元', 'banknote', 'blue'],
-    ['lost', '输单项目', '个', 'folderX', 'red'],
-  ];
-  return metadata.map(([key, label, unit, icon, color]) => ({
-    key, label, value: current[key], unit, icon, color,
-    change: previous[key] === 0 ? null : Math.round(((current[key] - previous[key]) / previous[key]) * 1000) / 10,
+  const previous = summarize(comparisonRange, scope, filter);
+  return METRIC_CATALOG.map(metadata => ({
+    ...metadata, value: current[metadata.key], previousValue: previous[metadata.key], range, comparisonRange,
+    change: previous[metadata.key] === 0 ? null : Math.round(((current[metadata.key] - previous[metadata.key]) / previous[metadata.key]) * 1000) / 10,
+    ...(metadata.key === 'transfers' ? { gradeBreakdown: current.gradeBreakdown } : {}),
   }));
 }

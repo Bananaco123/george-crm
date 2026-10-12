@@ -1,7 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Icon from './components/Icon.jsx';
-import { OPPORTUNITY_STAGES, ORG_TREE, EMPLOYEES, projects, opportunities, tasks as initialTasks, dormantCustomers, getProjectStatus, getProjectStats, matchesFilters, matchesPeriod, hydrateStoredTasks, TODAY } from './data.js';
-import { Metrics, Board, Schedule, Attention } from './components/Workbench.jsx';
+import { OPPORTUNITY_STAGES, ORG_TREE, EMPLOYEES, projects, opportunities, tasks as initialTasks, dormantCustomers, getProjectStatus, getProjectStats, getPeriodRange, matchesFilters, matchesPeriod, hydrateStoredTasks, TODAY } from './data.js';
+import { Board, Schedule, Attention } from './components/Workbench.jsx';
+import Metrics from './components/Metrics.jsx';
+import DateRangeControl from './components/DateRangeControl.jsx';
+import DestinationPage from './components/DestinationPage.jsx';
+import ProjectLevelTag from './components/ProjectLevelTag.jsx';
+import { CRM_PAGES, readNavigation, navigationHash, metricDestination, filterConditions } from './navigation.js';
 import ConversationPanel from './components/ConversationPanel.jsx';
 import StageDurationTag from './components/StageDurationTag.jsx';
 import { getRelatedConversations } from './conversations.js';
@@ -26,21 +31,21 @@ function IconButton({ name, label, onClick, ...props }) {
 
 function Badge({ children, color = 'blue' }) { return <span className={`badge ${color}`}>{children}</span>; }
 
-function Sidebar({ collapsed, setCollapsed }) {
+function Sidebar({ collapsed, setCollapsed, activePage, onNavigate }) {
   const [groups, setGroups] = useState({ customer: true, project: true, quote: true });
   const toggle = key => setGroups(prev => ({ ...prev, [key]: !prev[key] }));
-  const disabled = text => <button key={text} disabled className="nav-child" title="本期暂未开放"><span>{text}</span><span className="nav-dot" /></button>;
+  const child = page => <button key={page} className={`nav-child ${activePage === page ? 'active' : ''}`} aria-current={activePage === page ? 'page' : undefined} onClick={() => onNavigate(page)}><span>{CRM_PAGES[page]}</span><span className="nav-dot" /></button>;
   const group = (key, icon, label, children) => <div className="nav-group"><button aria-label={label} className="nav-parent" onClick={() => toggle(key)} aria-expanded={groups[key]} title={collapsed ? label : undefined}><Icon name={icon} size={19} /><span>{label}</span><Icon className={groups[key] ? 'chevron open' : 'chevron'} name="chevron" size={14} /></button>{!collapsed && groups[key] && <div className="nav-children">{children}</div>}</div>;
   return <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
     <div className="brand"><span className="brand-mark">G<span /></span>{!collapsed && <span>CRM</span>}</div>
     {!collapsed && <div className="nav-eyebrow">工作空间</div>}
     <nav aria-label="主导航">
-      <button className="nav-parent active" aria-current="page" title="工作台"><Icon name="dashboard" size={19} /><span>工作台</span><span className="active-dot" /></button>
-      <button className="nav-parent inactive" disabled title="本期暂未开放"><Icon name="checkCircle" size={19} /><span>待办中心</span></button>
+      <button className={`nav-parent ${activePage === 'workbench' ? 'active' : ''}`} aria-current={activePage === 'workbench' ? 'page' : undefined} title="工作台" onClick={() => onNavigate('workbench')}><Icon name="dashboard" size={19} /><span>工作台</span>{activePage === 'workbench' && <span className="active-dot" />}</button>
+      <button className={`nav-parent ${activePage === 'todos' ? 'active' : ''}`} aria-current={activePage === 'todos' ? 'page' : undefined} onClick={() => onNavigate('todos')}><Icon name="checkCircle" size={19} /><span>待办中心</span></button>
       <div className="nav-divider" />
-      {group('customer', 'users', '客户管理', ['线索管理', '客户管理'].map(label => disabled(label)))}
-      {group('project', 'folder', '项目管理', ['项目管理', '商机管理', '客户邀请函', '邀约到店'].map(label => disabled(label)))}
-      {group('quote', 'file', '方案报价', ['草稿报价', '商城选品'].map(label => disabled(label)))}
+      {group('customer', 'users', '客户管理', ['leads', 'customers'].map(child))}
+      {group('project', 'folder', '项目管理', ['projects', 'opportunities', 'invitations', 'visits'].map(child))}
+      {group('quote', 'file', '方案报价', ['quotes', 'catalog'].map(child))}
     </nav>
     <div className="sidebar-bottom">{!collapsed && <div className="workspace-status"><span /> 工作台已就绪</div>}<button className="collapse-button" onClick={() => setCollapsed(!collapsed)} aria-label={collapsed ? '展开侧边栏' : '收起侧边栏'}><Icon name="menu" size={18} />{!collapsed && <span>收起导航</span>}</button></div>
   </aside>;
@@ -53,8 +58,8 @@ function Clock() {
   return <div className="global-clock"><Icon name="globe" size={15} /><select aria-label="时区" value={zone} onChange={e => setZone(e.target.value)}><option value="Asia/Shanghai">北京</option><option value="Asia/Dubai">迪拜</option><option value="Europe/London">伦敦</option><option value="America/New_York">纽约</option></select><time>{new Intl.DateTimeFormat('en-GB', { timeZone: zone, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).format(now)}</time></div>;
 }
 
-function Header({ onHelp, onNotifications, taskCount }) {
-  return <header className="topbar"><div className="breadcrumb"><Icon name="home" size={17} /><span>/</span><strong>工作台</strong></div><div className="topbar-right"><span className="demo-label"><span />演示空间</span><IconButton name="help" label="工作台使用说明" onClick={onHelp} /><button className="notification-button icon-button" title="待办提醒" aria-label="待办提醒" onClick={onNotifications}><Icon name="bell" size={19} />{taskCount > 0 && <span className="notification-dot" />}</button><span className="header-divider" /><div className="user-avatar">悦</div><span className="user-name">林悦<small>销售负责人</small></span></div></header>;
+function Header({ onHelp, onNotifications, taskCount, page, onHome }) {
+  return <header className="topbar"><div className="breadcrumb"><button onClick={onHome} aria-label="返回工作台"><Icon name="home" size={17} /></button><span>/</span><strong>{CRM_PAGES[page]}</strong></div><div className="topbar-right"><IconButton name="help" label="工作台使用说明" onClick={onHelp} /><button className="notification-button icon-button" title="待办提醒" aria-label="待办提醒" onClick={onNotifications}><Icon name="bell" size={19} />{taskCount > 0 && <span className="notification-dot" />}</button><span className="header-divider" /><div className="user-avatar">悦</div><span className="user-name">林悦<small>销售负责人</small></span></div></header>;
 }
 
 function Dialog({ title, children, onClose, wide = false, className = '' }) {
@@ -76,7 +81,7 @@ function ProjectDetail({ item, onOpportunity, onConversation }) {
   const related = getOpps(item.id), stats = getProjectStats(item);
   const fields = [['客户', item.customer], ['国家地区', item.region], ['负责人', item.pm], ['交付经理', item.deliveryManager], ['项目金额', `¥ ${money(item.contribution)}`], ['实收金额', `¥ ${money(item.collected)}`], ['创建日期', item.createdAt], ['设计状态', `${item.designType} · ${item.designStatus}`]];
   return <>
-    <div className="detail-summary"><Badge>{getProjectStatus(item)}</Badge><span>{item.id}</span></div>
+    <div className="detail-summary"><Badge>{getProjectStatus(item)}</Badge><ProjectLevelTag level={item.level} /><span>{item.id}</span></div>
     <div className="detail-fields">{fields.map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}</div>
     <RelatedConversations context={{ kind: 'project', id: item.id }} onOpen={onConversation} />
     <h3 className="detail-section-title">关联商机 · 已报价 {stats.quoted} · 已成交 {stats.won}</h3>
@@ -94,7 +99,7 @@ function OpportunityDetail({ item, onLocate, onProject, onConversation }) {
     ['创建日期', item.createdAt], ['报价情况', item.quoted ? '已创建报价' : '暂未报价'],
   ];
   return <>
-    <div className="detail-summary"><Badge color={OP_COLORS[OPPORTUNITY_STAGES.indexOf(item.status)]}>{item.status}</Badge><StageDurationTag item={item} /><span>{item.id}</span></div>
+    <div className="detail-summary"><ProjectLevelTag level={project.level} /><Badge color={OP_COLORS[OPPORTUNITY_STAGES.indexOf(item.status)]}>{item.status}</Badge><span>{item.id}</span><StageDurationTag item={item} /></div>
     <div className="detail-fields">{fields.map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}</div>
     <h3 className="detail-section-title">商机进展</h3>
     <div className="stage-timeline">{route.map((stage, i) => <div key={stage} className={`${i <= route.indexOf(item.status) ? 'reached' : ''} ${stage === item.status ? 'current' : ''}`}><span>{i < route.indexOf(item.status) ? <Icon name="check" size={12} /> : i + 1}</span><small>{stage}</small></div>)}</div>
@@ -110,7 +115,9 @@ export default function App() {
   const [collapsed, setCollapsed] = useState(false);
   const [employeeId, setEmployeeId] = useState('all');
   const [departmentId, setDepartmentId] = useState('all');
-  const [period, setPeriod] = useState('本月');
+  const [period, setPeriod] = useState('近30天');
+  const [dateRange, setDateRange] = useState(() => getPeriodRange('近30天'));
+  const [route, setRoute] = useState(() => readNavigation());
   const [selectedDate, setSelectedDate] = useState(TODAY);
   const [taskFocusRequest, setTaskFocusRequest] = useState(0);
   const [tasks, setTasks] = useStoredState(`george-crm-tasks-v1-${TODAY}`, initialTasks);
@@ -118,18 +125,36 @@ export default function App() {
   const [locateId, setLocateId] = useState(null);
   const [toast, setToast] = useState('');
   const closeDialog = React.useCallback(() => setDialog(null), []);
-  const filter = useMemo(() => ({ scope: '全部数据', departmentId, employeeId, period }), [departmentId, employeeId, period]);
+  const filter = useMemo(() => ({ scope: '全部数据', departmentId, employeeId, period, dateRange, tasks }), [departmentId, employeeId, period, dateRange, tasks]);
   const members = EMPLOYEES.filter(item => departmentId === 'all' || item.departmentId === departmentId);
   const todayCount = tasks.filter(item => pending(item) && item.date === TODAY).length;
   useEffect(() => { if (!toast) return; const timer = setTimeout(() => setToast(''), 3500); return () => clearTimeout(timer); }, [toast]);
-  const openTask = item => setDialog({ type: 'task', item });
   const openProject = item => setDialog({ type: 'project', item });
   const openOpportunity = item => setDialog({ type: 'opportunity', item });
   const openConversation = (context, mode, conversationId) => setDialog({ type: 'conversation', context, mode, conversationId });
+  useEffect(() => {
+    const change = () => { setRoute(readNavigation()); setDialog(null); };
+    window.addEventListener('hashchange', change);
+    return () => window.removeEventListener('hashchange', change);
+  }, []);
+  const navigate = (page, conditions = {}) => {
+    setDialog(null);
+    window.location.hash = navigationHash(page, conditions);
+    setRoute({ page, conditions });
+    window.scrollTo({ top: 0 });
+  };
+  const navigateMetric = (metric, extra = {}) => {
+    const destination = metricDestination(metric, filter, extra);
+    navigate(destination.page, destination.conditions);
+  };
+  const navigateProject = item => navigate('projects', { ...filterConditions(filter), projectId: item.id, name: item.name, level: item.level, stage: getProjectStatus(item) });
+  const navigateOpportunity = item => navigate('opportunities', { ...filterConditions(filter), projectId: item.projectId, opportunityId: item.id, name: item.name, level: item.level, stage: item.status });
+  const navigateTask = item => navigate('todos', { taskId: item.id, date: item.date, taskType: item.type, name: item.title, owner: item.owner, status: item.status === 'completed' ? '已完成' : '待处理' });
   const locateProject = id => {
     setDialog(null);
     const project = getProject(id);
-    if (project && !matchesPeriod(project, period)) { setDialog({ type: 'project', item: project }); setToast('项目不在当前新建周期内，已打开项目详情'); return; }
+    if (project && !matchesPeriod(project, period, dateRange)) { setDialog({ type: 'project', item: project }); setToast('项目不在当前新建周期内，已打开项目详情'); return; }
+    navigate('workbench');
     if (project && !matchesFilters(project, filter)) {
       if (employeeId !== 'all' && project.responsibleEmployeeId !== employeeId) setEmployeeId('all');
       if (departmentId !== 'all' && project.departmentId !== departmentId) setDepartmentId(project.departmentId);
@@ -146,36 +171,40 @@ export default function App() {
     setToast('已添加跟进待办，日历与待办列表已同步');
   };
   const showTodayTasks = () => {
+    navigate('workbench');
     setTaskFocusRequest(previous => previous + 1);
-    document.getElementById('todo-panel')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    requestAnimationFrame(() => document.getElementById('todo-panel')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
   };
+  const destinationRecord = route.conditions.opportunityId ? opportunities.find(item => item.id === route.conditions.opportunityId) : route.conditions.taskId ? tasks.find(item => item.id === route.conditions.taskId) : route.conditions.projectId ? getProject(route.conditions.projectId) : null;
+  const showDestinationDetail = destinationRecord ? () => setDialog({ type: route.conditions.opportunityId ? 'opportunity' : route.conditions.taskId ? 'task' : 'project', item: destinationRecord }) : null;
   const dialogTitle = dialog?.type === 'conversation' ? '关联会话与 AI 销冠' : ['opportunity', 'project'].includes(dialog?.type) ? dialog.item.name : dialog?.type === 'task' ? '待办详情' : dialog?.type === 'dormant' ? '沉睡客户激活' : dialog?.type === 'schedule' ? '定时任务推送' : dialog?.type === 'analysis' ? '数据监测与分析' : '工作台说明';
   return <div className={`app-shell ${collapsed ? 'sidebar-is-collapsed' : ''}`}>
-    <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
+    <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} activePage={route.page} onNavigate={page => navigate(page)} />
     <div className="app-main">
-      <Header taskCount={todayCount} onHelp={() => setDialog({ type: 'help' })} onNotifications={showTodayTasks} />
-      <main className="workspace">
+      <Header taskCount={todayCount} onHelp={() => setDialog({ type: 'help' })} onNotifications={showTodayTasks} page={route.page} onHome={() => navigate('workbench')} />
+      <main className="workspace" style={{ display: route.page === 'workbench' ? undefined : 'none' }}>
         <div className="workbench-heading">
           <div className="workbench-heading-main">
             <div className="workbench-title"><h1>工作台</h1></div>
             <div className="workbench-filters">
               <label className="department-select"><Icon name="filter" size={15} /><span>部门</span><select aria-label="部门筛选" value={departmentId} onChange={event => { const id = event.target.value; setDepartmentId(id); if (id !== 'all' && !EMPLOYEES.some(item => item.id === employeeId && item.departmentId === id)) setEmployeeId('all'); setLocateId(null); }}><option value="all">全部部门</option>{ORG_TREE.map(department => <option value={department.id} key={department.id}>{department.name}</option>)}</select></label>
               <label className="member-select"><Icon name="users" size={15} /><span>成员</span><select value={employeeId} aria-label="成员筛选" onChange={event => { setEmployeeId(event.target.value); setLocateId(null); }}><option value="all">全部成员</option>{members.map(member => <option key={member.id} value={member.id}>{member.name}</option>)}</select></label>
-              <div className="segmented small global-period" aria-label="统计周期">{['今日', '本周', '本月'].map(value => <button key={value} className={value === period ? 'selected' : ''} aria-pressed={value === period} onClick={() => { setPeriod(value); setLocateId(null); }}>{value}</button>)}</div>
+              <DateRangeControl period={period} dateRange={dateRange} onChange={(value, range) => { setPeriod(value); if (range) setDateRange(range); setLocateId(null); }} />
             </div>
           </div>
           <div className="workbench-time"><Clock /></div>
         </div>
         <div className="workbench-columns">
           <div className="workbench-primary">
-            <Metrics filter={filter} />
-            <Board filter={filter} onProject={openProject} onOpportunity={openOpportunity} locateId={locateId} setLocateId={setLocateId} onLocate={locateProject} />
+            <Metrics filter={filter} onNavigate={navigateMetric} />
+            <Board filter={filter} onProject={navigateProject} onOpportunity={navigateOpportunity} locateId={locateId} setLocateId={setLocateId} onLocate={id => navigateProject(getProject(id))} />
             <Attention count={dormantCustomers.length} onDormant={() => setDialog({ type: 'dormant' })} onSchedule={() => setDialog({ type: 'schedule' })} onAnalysis={() => setDialog({ type: 'analysis' })} />
           </div>
-          <Schedule tasks={tasks} selectedDate={selectedDate} setSelectedDate={setSelectedDate} onTask={openTask} focusRequest={taskFocusRequest} />
+          <Schedule tasks={tasks} selectedDate={selectedDate} setSelectedDate={setSelectedDate} onTask={navigateTask} focusRequest={taskFocusRequest} />
         </div>
         <footer className="workbench-footer">演示数据 · 金额单位：人民币</footer>
       </main>
+      {route.page !== 'workbench' && <DestinationPage route={route} onBack={() => navigate('workbench')} onDetail={showDestinationDetail} />}
     </div>
     {dialog && <Dialog title={dialogTitle} onClose={closeDialog} wide={['analysis', 'dormant'].includes(dialog.type)} className={dialog.type === 'conversation' ? 'conversation-dialog' : ''}>
       {dialog.type === 'opportunity' && <OpportunityDetail item={dialog.item} onLocate={locateProject} onProject={openProject} onConversation={openConversation} />}
@@ -185,7 +214,7 @@ export default function App() {
       {dialog.type === 'dormant' && <><div className="dormant-list">{dormantCustomers.map(customer => { const added = tasks.some(item => item.customerId === customer.id && pending(item)); return <article key={customer.id}><div className="dormant-avatar">{customer.name.slice(0, 1)}</div><div><h3>{customer.name}<Badge color="amber">{customer.days} 天未联系</Badge></h3><p>{customer.company} · 负责人 {customer.owner}</p><small>关注：{customer.interest}</small></div><button className={added ? 'secondary-button' : 'primary-button'} disabled={added} onClick={() => addFollowup(customer)}>{added ? '已添加待办' : '添加跟进'}</button></article>; })}{!dormantCustomers.length && <p className="dialog-intro">当前范围暂无沉睡客户</p>}</div><p className="detail-note">添加后会出现在本地工作台的待办与日历中，不会向客户发送消息。</p></>}
       {dialog.type === 'schedule' && <>{[{ title: '今日待办摘要', time: '每个工作日 09:00', description: '当天的跟进、项目与报价待办' }, { title: '逾期待办提醒', time: '每个工作日 16:30', description: '尚未处理的逾期事项' }, { title: '沉睡客户回访', time: '每周一 10:00', description: '长期未联系的客户名单' }].map(item => <div className="schedule-row" key={item.title}><span className="attention-icon blue"><Icon name="clock" size={20} /></span><div><strong>{item.title}</strong><p>{item.time} · 北京时间</p><small>{item.description}</small></div><Badge color="slate">未启用</Badge></div>)}<div className="info-callout"><Icon name="bell" size={18} /><span>当前为提醒计划预览，实际推送需接入任务服务和通知渠道。</span></div></>}
       {dialog.type === 'analysis' && <><p className="dialog-intro">以下为全部演示数据的规则分析，尚未接入实时 AI 服务。</p><div className="insight-card"><Badge color="purple">报价推进</Badge><h3>{opportunities.filter(item => item.status === '报价中').length} 个商机处于报价中</h3><p>确认客户反馈与报价版本，明确下一次沟通时间。</p></div><div className="insight-card"><Badge color="amber">成交衔接</Badge><h3>{opportunities.filter(item => item.status === '待下单').length} 个商机等待下单</h3><p>报价确认后，需由 ERP 收款达到备货标准并确定生产，才进入交付中。</p></div><div className="insight-card"><Badge color="blue">跟进提醒</Badge><h3>{tasks.filter(item => pending(item) && item.date < TODAY).length} 项待办已逾期</h3><p>检查联系计划和业务进度，跟进尚未获得反馈的事项。</p></div></>}
-      {dialog.type === 'help' && <><div className="help-list"><p><b>01</b><span><strong>部门与成员</strong>部门、成员与统计周期共同筛选业务概览和项目商机，项目商机按创建日期统计。右侧日历与待办保留独立的日期和类型筛选。</span></p><p><b>02</b><span><strong>项目商机</strong>切换商机视图或项目视图，按项目名称或客户搜索。看板整个内容区均可按住左右拖动，阶段条上也可使用滚轮横向浏览。单击卡片查看详情，商机可定位所属项目。</span></p><p><b>03</b><span><strong>日历与待办</strong>在我的日历中选择日期，查看当天待办；待办中心可切换全部待办、跟进待办、项目待办和报价待办。</span></p></div><div className="info-callout"><Icon name="help" size={18} /><span>当前仅开放工作台。全部业务数据用于演示，未连接实际客户、订单或通知系统。</span></div></>}
+      {dialog.type === 'help' && <><div className="help-list"><p><b>01</b><span><strong>部门与成员</strong>部门、成员与统计周期共同筛选业务概览和项目商机，项目商机按创建日期统计。右侧日历与待办保留独立的日期和类型筛选。</span></p><p><b>02</b><span><strong>项目商机</strong>切换商机视图或项目视图，按项目名称或客户搜索。看板整个内容区均可按住左右拖动，阶段条上也可使用滚轮横向浏览。单击卡片携带筛选条件跳转至对应模块，可继续查看关联详情。</span></p><p><b>03</b><span><strong>日历与待办</strong>在我的日历中选择日期，查看当天待办；待办中心可切换全部待办、跟进待办、项目待办和报价待办。</span></p></div><div className="info-callout"><Icon name="help" size={18} /><span>工作台提供业务概览与看板，其他模块展示跳转携带的筛选条件。全部业务数据用于演示，未连接实际客户、订单或通知系统。</span></div></>}
     </Dialog>}
     {toast && <div className="toast" role="status"><Icon name="checkCircle" size={17} />{toast}</div>}
   </div>;

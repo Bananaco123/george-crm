@@ -1,0 +1,53 @@
+/* 业务概览配置交互的独立样式；指标字段与看板视觉主题分别维护。 */
+.configurable-metrics .metric-heading-actions{display:flex;align-items:center;gap:10px;min-width:0}
+.configurable-metrics .metric-settings-trigger{width:25px;height:25px;color:#8594a9;border:1px solid transparent;border-radius:6px}
+.configurable-metrics .metric-settings-trigger:hover{border-color:#dbe6f4}
+.metric-settings-notice{font-size:11px;color:#638476}
+.configurable-metrics .metric-card-row{grid-template-columns:repeat(5,minmax(0,1fr))}
+.configurable-metrics .metric-navigation-card{display:flex;flex-direction:column;text-align:left;width:100%;min-height:110px;transition:border-color .15s,box-shadow .15s,background-color .15s}
+.configurable-metrics .metric-navigation-card:hover{background:#fcfdff;border-color:#b6cce7;box-shadow:0 2px 7px #34578009}
+.configurable-metrics .metric-navigation-card:focus-visible{outline:2px solid #6796d4;outline-offset:2px}
+.configurable-metrics .metric-label,.configurable-metrics .metric-footer{width:100%}
+.configurable-metrics .metric-main-value{display:flex;align-items:center;justify-content:space-between;gap:5px;min-width:0;width:100%;flex:1}
+.configurable-metrics .metric-value{display:block;min-width:0;flex-shrink:0}
+.configurable-metrics .has-grade-breakdown{container-type:inline-size}
+.configurable-metrics .has-grade-breakdown .metric-value{font-size:24px!important}
+.configurable-metrics .has-grade-breakdown .metric-value small{margin-left:3px}
+.configurable-metrics .metric-grade-breakdown{display:grid;gap:2px;flex-shrink:0;padding-left:8px;border-left:1px solid #e7ecf4;font-size:10px;line-height:1.2;font-variant-numeric:tabular-nums}
+.metric-grade-breakdown>span{display:flex;align-items:center;justify-content:space-between;gap:7px}
+.metric-grade-breakdown i{font-style:normal;color:#8a94a6;font-size:9px}
+.metric-grade-breakdown b{font-weight:500;color:#61718a}
+@container(max-width:135px){.configurable-metrics .has-grade-breakdown .metric-value{font-size:21px!important}.configurable-metrics .metric-grade-breakdown{padding-left:5px;font-size:9px}.metric-grade-breakdown>span{gap:4px}}
+
+.metric-settings-dialog{width:min(730px,calc(100vw - 32px));max-height:calc(100vh - 48px);border:1px solid #dce5f0;border-radius:14px;padding:0;background:#fff;color:#34445c;box-shadow:0 22px 80px #18335529;overflow:auto;font-family:inherit}
+.metric-settings-dialog::backdrop{background:#15284658;backdrop-filter:blur(2px)}
+.metric-settings-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:24px 26px 20px;border-bottom:1px solid #edf1f6}
+.metric-settings-heading h2{font-size:18px;font-weight:600;color:#24364e;line-height:1.5}
+.metric-settings-heading p{font-size:12px;color:#8090a4;margin-top:5px;line-height:1.6}
+.metric-selection-summary{display:flex;align-items:center;justify-content:space-between;padding:18px 26px 14px;font-size:12px;color:#8290a3}
+.metric-selection-summary>span>b{font-weight:500;color:#566b85;margin-left:3px}
+.metric-selected-count{padding:4px 9px;border-radius:5px;color:#6a7d96;background:#f4f7fb;font-variant-numeric:tabular-nums}
+.metric-selected-count strong{font-weight:600;color:#356baa}
+.metric-selected-count.at-limit{color:#6282ad;background:#edf4ff}
+.metric-selection-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:0 26px}
+.metric-selection-option{position:relative;display:flex;align-items:center;gap:10px;min-width:0;border:1px solid #e4eaf1;border-radius:8px;padding:12px;background:#fff;cursor:pointer;transition:border-color .15s,background-color .15s}
+.metric-selection-option:hover:not(.is-disabled){border-color:#9dbadd;background:#fbfdff}
+.metric-selection-option.is-selected{border-color:#b9cfec;background:#f5f9ff}
+.metric-selection-option.is-disabled{cursor:default;background:#fafbfd;opacity:.57}
+.metric-selection-option input{position:absolute;inset:0;opacity:0;width:100%;height:100%;margin:0;cursor:inherit}
+.metric-selection-option:has(input:focus-visible){outline:2px solid #6b99d4;outline-offset:2px}
+.metric-option-icon{width:33px;height:33px;display:grid;place-items:center;flex-shrink:0;border-radius:7px}
+.metric-option-copy{display:grid;gap:4px;min-width:0;flex:1}
+.metric-option-copy strong{font-weight:500;font-size:12px;color:#3d526d;white-space:nowrap}
+.metric-option-copy small{font-size:10px;color:#9aa7b8;white-space:nowrap}
+.metric-option-check{width:16px;height:16px;border:1px solid #d8e1ed;border-radius:4px;background:#fff;display:grid;place-items:center;flex-shrink:0;color:#fff}
+.is-selected .metric-option-check{border-color:#4c82c5;background:#4c82c5}
+.metric-selection-hint{display:flex;align-items:center;gap:6px;min-height:48px;padding:13px 26px;font-size:11px;line-height:1.6;color:#8595a9}
+.metric-settings-actions{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:17px 26px;background:#fbfcfe;border-top:1px solid #edf1f6}
+.metric-settings-actions>div{display:flex;align-items:center;gap:9px}
+.metric-settings-actions .primary-button,.metric-settings-actions .secondary-button{font-size:12px;padding:8px 18px;border-radius:6px;min-height:34px}
+.metric-settings-actions .primary-button:disabled{background:#c0d0e3;cursor:not-allowed}
+.metric-reset-button{display:inline-flex;align-items:center;gap:6px;padding:5px 0;font-size:12px;color:#71849e}
+.metric-reset-button:hover{color:#386fae}
+@media(max-width:620px){.metric-selection-options{grid-template-columns:repeat(2,minmax(0,1fr));padding:0 18px}.metric-settings-heading,.metric-settings-actions{padding:18px}.metric-selection-summary,.metric-selection-hint{padding-left:18px;padding-right:18px}.metric-option-icon{width:28px;height:28px}.metric-selection-option{padding:10px;gap:8px}.metric-option-copy strong{font-size:11px}}
+@media(prefers-reduced-motion:reduce){.configurable-metrics .metric-navigation-card,.metric-selection-option{transition:none}}

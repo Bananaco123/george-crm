@@ -1,0 +1,35 @@
+/* 筛选、等级和跳转的功能样式；看板视觉覆盖独立保存在 board-polish.css。 */
+.record-tags{justify-content:space-between;gap:8px}
+.record-classification{display:inline-flex;align-items:center;flex-wrap:wrap;gap:5px;min-width:0}
+.project-level-tag{display:inline-flex;align-items:center;white-space:nowrap;border:1px solid #d9e5f3;background:#f0f5fc;color:#4e709b;border-radius:4px;font-size:10px;line-height:1.4;padding:2px 6px;font-weight:500}
+.record-tags>.stage-duration-tag,.detail-summary>.stage-duration-tag{margin-left:auto}
+.stage-duration-tag.is-overdue{background:#fff4e5;color:#a66519;border:1px solid #efd6ad;padding:2px 6px}
+.stage-duration-tag.is-overdue>b{border-left:1px solid #e6c598;padding-left:5px;margin-left:1px;font-size:10px;font-weight:600}
+.date-range-control{position:relative;flex:none}
+.date-range-control .global-period{height:34px;align-items:center}
+.date-range-control .global-period button{display:inline-flex;align-items:center;gap:3px;padding:5px 8px;font-size:11px;white-space:nowrap}
+.date-range-popover{position:absolute;right:0;top:calc(100% + 9px);z-index:30;width:350px;border:1px solid #dce5ef;border-radius:10px;background:#fff;box-shadow:0 12px 36px #1e355c20;padding:18px}
+.date-range-popover h3{font-size:14px;font-weight:600;color:#263951;margin:0 0 16px}
+.date-range-fields{display:flex;align-items:flex-end;gap:9px}
+.date-range-fields label{display:flex;flex-direction:column;gap:7px;font-size:11px;color:#64748b;min-width:0;flex:1}
+.date-range-fields input{width:100%;font:inherit;font-size:12px;padding:8px 7px;color:#334155;border:1px solid #dce5ef;border-radius:5px;min-width:0;background:#fff}
+.date-range-fields>span{font-size:11px;color:#94a3b8;padding-bottom:9px}
+.date-range-actions{display:flex;align-items:center;justify-content:flex-end;gap:18px;margin-top:18px}
+.date-range-actions .primary-button{padding:8px 13px}
+.range-error{color:#bd4a4a;font-size:11px;margin-top:10px;line-height:1.6}
+.nav-child.active{background:#244d89;color:#fff;border-radius:5px}
+.nav-child.active .nav-dot{background:#91b8ff}
+.breadcrumb>button{display:flex;align-items:center;color:inherit;padding:0}
+.destination-workspace{min-height:calc(100vh - 58px)}
+.destination-heading{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;gap:20px}
+.destination-heading h1{font-size:22px;color:#263951;font-weight:600}
+.destination-panel{padding:38px;max-width:1000px}
+.destination-icon{display:inline-grid;place-items:center;width:48px;height:48px;background:#edf4fc;color:#3c75b9;border-radius:12px;margin-bottom:18px}
+.destination-panel h2{font-size:20px;font-weight:600;color:#263951;line-height:1.6}
+.destination-panel>p{font-size:13px;color:#7c8da4;line-height:1.9;margin:10px 0 24px}
+.destination-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 28px;margin:0 0 28px;background:#f7f9fc;border:1px solid #e6edf4;border-radius:9px;padding:8px 22px}
+.destination-filters>div{display:grid;grid-template-columns:82px minmax(0,1fr);gap:10px;padding:14px 0;border-bottom:1px solid #e8eef5;font-size:12px;line-height:1.7;align-items:start}
+.destination-filters dt{color:#8a9bb2}
+.destination-filters dd{margin:0;color:#3c526f;overflow-wrap:anywhere}
+.destination-default{padding:25px 0;font-size:13px;color:#94a3b8}
+@media(max-width:1450px){.workbench-filters{gap:7px}.workbench-title,.workbench-heading-main{gap:8px}.department-select,.member-select{gap:5px;padding:0 8px}.department-select select{width:112px}.member-select select{width:72px}.workbench-title h1{font-size:21px}}

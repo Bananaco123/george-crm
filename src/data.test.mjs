@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { PROJECT_STAGES, OPPORTUNITY_STAGES, BOARD_OPPORTUNITY_STAGES, ORG_TREE, EMPLOYEES, CURRENT_USER, projects, opportunities, tasks, dormantCustomers, TODAY, dateKey, getProjectStats, getProjectStatus, getMetrics, matchesFilters, matchesPeriod, hydrateStoredTasks, getDepartmentIds, getStageDurationDays } from './data.js';
+import { PROJECT_STAGES, OPPORTUNITY_STAGES, BOARD_OPPORTUNITY_STAGES, ORG_TREE, EMPLOYEES, CURRENT_USER, projects, opportunities, tasks, dormantCustomers, receiptEvents, METRIC_CATALOG, DEFAULT_METRIC_KEYS, TODAY, dateKey, getPeriodRange, getProjectStats, getProjectStatus, getMetrics, matchesFilters, matchesPeriod, hydrateStoredTasks, getDepartmentIds, getStageDurationDays } from './data.js';
 
 const project = { id: 'test-project', lost: false };
 const item = (status, overrides = {}) => ({ projectId: project.id, category: 'product', status, amount: 1000, quoted: false, ...overrides });
@@ -53,8 +53,8 @@ test('日期键使用北京时间且保留已有日期字符串', () => {
 
 test('指标筛选使用一致事件，今日新增项目与报价可核对', () => {
   const metrics = getMetrics('今日', '全部数据');
-  assert.equal(metrics.length, 10);
-  assert.deepEqual(metrics.slice(5).map(item => item.label), ['新建商机', '新建报价', '到店客户', '业绩金额', '输单项目']);
+  assert.equal(metrics.length, 15);
+  assert.deepEqual(metrics.slice(0, 10).map(item => item.key), DEFAULT_METRIC_KEYS);
   assert.equal(metrics.find(item => item.key === 'projects').value, projects.filter(item => item.createdAt === TODAY).length);
   assert.equal(metrics.find(item => item.key === 'quotes').value, opportunities.filter(item => item.quoted && item.quotedAt === TODAY).length);
   assert.equal(metrics.find(item => item.key === 'opportunities').value, opportunities.filter(item => item.createdAt === TODAY).length);
@@ -182,7 +182,7 @@ test('商机从洽谈中进入看板，项目收款与产品商机同源且角�
 });
 
 test('海外客户与项目名称参照 GOS，商机、待办、沉睡客户保持同一客户关系', () => {
-  assert.equal(projects.length, 13);
+  assert.ok(projects.length >= 17);
   assert.ok(opportunities.length >= 34);
   assert.ok(projects.every(project => /[a-z]/i.test(project.customer) && /[a-z]/i.test(project.name)));
   assert.deepEqual(projects.filter(project => ['Aster Residence', 'Lim Family House', 'Noura Villa'].includes(project.customer)).map(project => [project.customer, project.region]), [
@@ -315,4 +315,175 @@ test('阶段停留天数按北京时间自然日计算，跨月闰日有效且�
   assert.equal(getStageDurationDays(null), 0);
   assert.equal(getStageDurationDays({ stageEnteredAt: TODAY }), 0);
   assert.ok(opportunities.every(item => Number.isInteger(getStageDurationDays(item)) && getStageDurationDays(item) >= 0));
+});
+
+const offsetDate = (offset, from = TODAY) => {
+  const date = new Date(`${from}T12:00:00+08:00`);
+  date.setUTCDate(date.getUTCDate() + offset);
+  return dateKey(date);
+};
+
+test('项目等级由商机继承，近30天各阶段样本充足且全部成交由已赢产品真实聚合', () => {
+  assert.ok(projects.every(item => ['A', 'B', 'C'].includes(item.level)));
+  assert.deepEqual(new Set(projects.map(item => item.level)), new Set(['A', 'B', 'C']));
+  assert.ok(opportunities.every(item => item.level === projects.find(project => project.id === item.projectId).level));
+  const currentProjects = projects.filter(item => matchesPeriod(item, '近30天'));
+  for (const stage of PROJECT_STAGES) assert.ok(currentProjects.filter(item => getProjectStatus(item) === stage).length >= 3, stage);
+  for (const project of currentProjects) {
+    const products = opportunities.filter(item => item.projectId === project.id && item.category === 'product' && !['待接受', '已拒绝'].includes(item.status));
+    const wins = products.filter(item => ['交付中', '已完成'].includes(item.status));
+    const status = getProjectStatus(project);
+    if (status === '全部成交') {
+      assert.ok(products.length > 0);
+      assert.equal(wins.length, products.length);
+    }
+    if (status === '部分成交') assert.ok(wins.length > 0 && wins.length < products.length);
+    if (status === '待成交') assert.equal(wins.length, 0);
+    if (status === '已输单') assert.equal(project.lost, true);
+  }
+  for (const stage of BOARD_OPPORTUNITY_STAGES) assert.ok(opportunities.filter(item => matchesPeriod(item, '近30天') && item.status === stage).length >= 4, stage);
+  for (const stage of ['洽谈中', '报价中', '待下单', '交付中']) {
+    assert.ok(opportunities.some(item => matchesPeriod(item, '近30天') && item.status === stage && getStageDurationDays(item) >= 10), `${stage} 缺少超时样本`);
+    assert.ok(opportunities.some(item => matchesPeriod(item, '近30天') && item.status === stage && getStageDurationDays(item) === 0), `${stage} 缺少普通样本`);
+  }
+});
+
+test('日期快捷区间包含两端，近7天和近30天均包含今日', () => {
+  assert.deepEqual(getPeriodRange(), { start: offsetDate(-29), end: TODAY });
+  assert.deepEqual(getPeriodRange('昨日'), { start: offsetDate(-1), end: offsetDate(-1) });
+  assert.deepEqual(getPeriodRange('今日'), { start: TODAY, end: TODAY });
+  assert.deepEqual(getPeriodRange('近7天'), { start: offsetDate(-6), end: TODAY });
+  assert.deepEqual(getPeriodRange('近30天'), { start: offsetDate(-29), end: TODAY });
+  for (const period of ['昨日', '今日', '近7天', '近30天', '本周', '本月']) {
+    const { start, end } = getPeriodRange(period);
+    assert.equal(matchesPeriod({ createdAt: start }, period), true);
+    assert.equal(matchesPeriod({ createdAt: end }, period), true);
+    assert.equal(matchesPeriod({ createdAt: offsetDate(-1, start) }, period), false);
+    assert.equal(matchesPeriod({ createdAt: offsetDate(1, end) }, period), false);
+  }
+  assert.equal(matchesPeriod({ createdAt: `${offsetDate(-1)}T16:00:00Z` }, '今日'), true);
+});
+
+test('自由筛选严格校验日期与先后顺序，无效范围返回空数据而非全量', () => {
+  const valid = { start: '2024-02-28', end: '2024-03-01' };
+  assert.deepEqual(getPeriodRange('自由筛选', valid), valid);
+  assert.equal(matchesPeriod({ createdAt: '2024-02-29' }, '自由筛选', valid), true);
+  assert.equal(matchesPeriod({ createdAt: '2024-03-02' }, '自由筛选', valid), false);
+  for (const range of [undefined, null, {}, { start: TODAY }, { end: TODAY }, { start: TODAY, end: offsetDate(-1) }, { start: '2026-02-29', end: TODAY }, { start: '2026-09-31', end: TODAY }, { start: 'invalid', end: TODAY }, { start: `${TODAY}T00:00:00Z`, end: TODAY }]) {
+    assert.equal(getPeriodRange('自由筛选', range), null);
+    assert.equal(matchesPeriod({ createdAt: TODAY }, '自由筛选', range), false);
+    const metrics = getMetrics('自由筛选', '全部数据', { dateRange: range });
+    assert.equal(metrics.length, 15);
+    assert.ok(metrics.every(item => item.value === 0 && item.previousValue === 0 && item.change === null && item.range === null));
+    assert.deepEqual(metrics.find(item => item.key === 'transfers').gradeBreakdown, { A: 0, B: 0, C: 0 });
+  }
+  assert.equal(getPeriodRange('未知周期'), null);
+  assert.equal(matchesPeriod({ createdAt: TODAY }, '未知周期'), false);
+  assert.equal(dateKey('2026-02-30'), '');
+});
+
+test('新周期与自由区间比较前一个等长连续区间，比较值能够独立重算', () => {
+  for (const [period, dateRange] of [['昨日'], ['今日'], ['近7天'], ['近30天'], ['自由筛选', { start: offsetDate(-19), end: offsetDate(-5) }], ['自由筛选', { start: TODAY, end: TODAY }]]) {
+    for (const departmentId of ['all', 'north-america', 'wisdom-center']) {
+      const metrics = getMetrics(period, '全部数据', { departmentId, dateRange });
+      const { range, comparisonRange } = metrics[0];
+      const duration = Math.round((new Date(`${range.end}T00:00:00Z`) - new Date(`${range.start}T00:00:00Z`)) / 86400000) + 1;
+      assert.equal(comparisonRange.start, offsetDate(-duration, range.start));
+      assert.equal(comparisonRange.end, offsetDate(-1, range.start));
+      const previous = getMetrics('自由筛选', '全部数据', { departmentId, dateRange: comparisonRange });
+      for (const metric of metrics) {
+        const base = previous.find(item => item.key === metric.key).value;
+        assert.equal(metric.previousValue, base);
+        assert.equal(metric.change, base === 0 ? null : Math.round(((metric.value - base) / base) * 1000) / 10);
+      }
+    }
+  }
+  const spend = getMetrics('近30天').find(item => item.key === 'spend');
+  assert.ok(spend.value > 0 && spend.previousValue > 0, '活动数据应覆盖近60天及前期比较');
+});
+
+test('指标目录提供15项完整业务定义，默认10项顺序固定且备选值来自业务数据', () => {
+  assert.deepEqual(DEFAULT_METRIC_KEYS, ['spend', 'enquiries', 'transfers', 'customers', 'visits', 'projects', 'opportunities', 'quotes', 'revenue', 'lost']);
+  assert.equal(METRIC_CATALOG.length, 15);
+  assert.equal(new Set(METRIC_CATALOG.map(item => item.key)).size, 15);
+  assert.ok(METRIC_CATALOG.every(item => item.label && item.unit && item.icon && item.color && item.description));
+  for (const period of ['昨日', '今日', '近7天', '近30天']) {
+    for (const departmentId of ['all', ...ORG_TREE.map(item => item.id)]) {
+      const range = getPeriodRange(period), within = date => date >= range.start && date <= range.end;
+      const visible = item => matchesFilters(item, { departmentId });
+      const metrics = getMetrics(period, '全部数据', { departmentId });
+      const value = key => metrics.find(item => item.key === key).value;
+      const pending = tasks.filter(item => visible(item) && within(item.date) && item.status !== 'completed');
+      assert.equal(value('followups'), pending.filter(item => item.type === '跟进').length);
+      assert.equal(value('overdue'), pending.filter(item => item.date < TODAY).length);
+      assert.equal(value('won'), opportunities.filter(item => visible(item) && within(item.closedAt) && ['交付中', '已完成'].includes(item.status)).length);
+      assert.equal(value('receipts'), receiptEvents.filter(item => visible(item) && within(item.date)).reduce((sum, item) => sum + item.amount, 0));
+      assert.equal(value('quoteAmount'), opportunities.filter(item => visible(item) && item.quoted && within(item.quotedAt)).reduce((sum, item) => sum + item.quoteAmount, 0));
+    }
+  }
+});
+
+test('线索转派等级与总量同源，同部门成员及日期切片均可加总还原', () => {
+  const transfer = (period, filter = {}) => getMetrics(period, '全部数据', filter).find(item => item.key === 'transfers');
+  for (const period of ['昨日', '今日', '近7天', '近30天']) {
+    const total = transfer(period);
+    assert.equal(Object.values(total.gradeBreakdown).reduce((sum, value) => sum + value, 0), total.value);
+    const departments = ORG_TREE.map(item => transfer(period, { departmentId: item.id }));
+    assert.equal(departments.reduce((sum, item) => sum + item.value, 0), total.value);
+    for (const grade of ['A', 'B', 'C']) {
+      assert.equal(departments.reduce((sum, item) => sum + item.gradeBreakdown[grade], 0), total.gradeBreakdown[grade]);
+    }
+    for (const department of ORG_TREE) {
+      const metrics = EMPLOYEES.filter(item => item.departmentId === department.id).map(item => transfer(period, { departmentId: department.id, employeeId: item.id }));
+      const selected = transfer(period, { departmentId: department.id });
+      assert.equal(metrics.reduce((sum, item) => sum + item.value, 0), selected.value);
+      for (const grade of ['A', 'B', 'C']) assert.equal(metrics.reduce((sum, item) => sum + item.gradeBreakdown[grade], 0), selected.gradeBreakdown[grade]);
+    }
+  }
+  const daily = Array.from({ length: 7 }, (_, offset) => transfer('自由筛选', { dateRange: { start: offsetDate(-offset), end: offsetDate(-offset) } }));
+  const week = transfer('近7天');
+  assert.equal(daily.reduce((sum, item) => sum + item.value, 0), week.value);
+  for (const grade of ['A', 'B', 'C']) assert.equal(daily.reduce((sum, item) => sum + item.gradeBreakdown[grade], 0), week.gradeBreakdown[grade]);
+  const mismatch = transfer('近30天', { departmentId: 'north-america', employeeId: 'zhou-yuan' });
+  assert.equal(mismatch.value, 0);
+  assert.deepEqual(mismatch.gradeBreakdown, { A: 0, B: 0, C: 0 });
+});
+
+test('实收事件严格等于已有商机实收，时间不早于成交且未成交商机没有现金事件', () => {
+  assert.equal(new Set(receiptEvents.map(item => item.id)).size, receiptEvents.length);
+  for (const opportunity of opportunities) {
+    const receipts = receiptEvents.filter(item => item.opportunityId === opportunity.id);
+    assert.equal(receipts.reduce((sum, item) => sum + item.amount, 0), opportunity.receivedAmount ?? 0);
+    if (!['交付中', '已完成'].includes(opportunity.status)) assert.equal(receipts.length, 0);
+    for (const receipt of receipts) {
+      assert.ok(receipt.amount > 0);
+      assert.ok(receipt.date >= opportunity.closedAt && receipt.date <= opportunity.stageEnteredAt && receipt.date <= TODAY);
+      assert.equal(receipt.projectId, opportunity.projectId);
+      assert.equal(receipt.departmentId, opportunity.departmentId);
+      assert.equal(receipt.responsibleEmployeeId, opportunity.responsibleEmployeeId);
+    }
+    assert.equal(opportunity.quoteAmount, opportunity.quoted ? opportunity.amount : null);
+  }
+});
+
+test('待办指标使用浏览器当前数组，新增跟进与已完成状态同步且保留范围过滤', () => {
+  const currentTasks = [
+    { id: 'ACT-C-001', owner: CURRENT_USER, projectId: projects[0].id, type: '跟进', date: TODAY, status: 'pending' },
+    { id: 'OVERDUE-MINE', owner: CURRENT_USER, type: '跟进', date: offsetDate(-1), status: 'pending' },
+    { id: 'OTHER-DEPARTMENT', owner: '周予安', type: '跟进', date: offsetDate(-1), status: 'pending' },
+    { id: 'COMPLETED', owner: CURRENT_USER, type: '跟进', date: offsetDate(-1), status: 'completed' },
+    { id: 'OUTSIDE-RANGE', owner: CURRENT_USER, type: '跟进', date: offsetDate(-8), status: 'pending' },
+  ];
+  const values = (period, overrides = {}) => Object.fromEntries(getMetrics(period, '全部数据', {
+    tasks: currentTasks, departmentId: 'north-america', employeeId: 'lin-yue', ...overrides,
+  }).filter(item => ['followups', 'overdue'].includes(item.key)).map(item => [item.key, item.value]));
+  assert.deepEqual(values('近7天'), { followups: 2, overdue: 1 });
+  assert.deepEqual(values('今日'), { followups: 1, overdue: 0 });
+  assert.deepEqual(values('近7天', { departmentId: 'all', employeeId: 'all' }), { followups: 3, overdue: 2 });
+  currentTasks[0].status = 'completed';
+  assert.deepEqual(values('今日'), { followups: 0, overdue: 0 });
+  assert.deepEqual(values('近7天'), { followups: 1, overdue: 1 });
+  assert.deepEqual(values('近7天', { tasks: [] }), { followups: 0, overdue: 0 });
+  assert.deepEqual(values('自由筛选', { dateRange: { start: offsetDate(-1), end: offsetDate(-1) } }), { followups: 1, overdue: 1 });
+  assert.deepEqual(values('自由筛选', { dateRange: { start: TODAY, end: offsetDate(-1) } }), { followups: 0, overdue: 0 });
 });

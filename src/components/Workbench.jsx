@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Icon from './Icon.jsx';
 import StageDurationTag from './StageDurationTag.jsx';
-import { PROJECT_STAGES, BOARD_OPPORTUNITY_STAGES, projects, opportunities, getProjectStatus, getMetrics, matchesFilters, matchesPeriod, TODAY, dateKey } from '../data.js';
+import ProjectLevelTag from './ProjectLevelTag.jsx';
+import { PROJECT_STAGES, BOARD_OPPORTUNITY_STAGES, projects, opportunities, getProjectStatus, matchesFilters, matchesPeriod, TODAY, dateKey } from '../data.js';
 
 const amount = value => new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 }).format(value || 0);
-const metricAmount = value => value >= 10000 ? (value / 10000).toFixed(1).replace(/\.0$/, '') : amount(value);
 const findProject = id => projects.find(item => item.id === id);
 const projectOpportunities = id => opportunities.filter(item => item.projectId === id);
 const isPending = item => item.status !== 'completed';
@@ -34,19 +34,6 @@ function useTransientScrollbars(container) {
   }, [container]);
 }
 
-export function Metrics({ filter }) {
-  const period = filter.period;
-  const metrics = getMetrics(period, filter.scope, filter);
-  return <section className="panel metrics-section" aria-label="业务概览">
-    <div className="section-heading"><h2>业务概览</h2></div>
-    <div className="metric-cards">{[metrics.slice(0, 5), metrics.slice(5)].map((row, i) => <div className="metric-card-row" style={{ '--card-count': row.length }} key={i}>{row.map(metric => <article className="metric-card" key={metric.key}>
-      <div className="metric-label"><span>{metric.label}</span><span className={`metric-icon ${metric.color}`}><Icon name={metric.icon} size={15} /></span></div>
-      <div className="metric-value" title={`${metric.value}${metric.unit}`}>{metric.unit === '元' && <span className="currency">¥</span>}{metric.unit === '元' ? metricAmount(metric.value) : amount(metric.value)}{metric.unit === '元' ? metric.value >= 10000 && <small>万</small> : <small>{metric.unit}</small>}</div>
-      <div className="metric-footer"><span>较上周期</span><span className={metric.change > 0 ? 'trend-up' : metric.change < 0 ? 'trend-down' : 'trend-flat'}>{metric.change === null ? '—' : `${metric.change > 0 ? '+' : ''}${metric.change}%`}</span></div>
-    </article>)}</div>)}</div>
-  </section>;
-}
-
 function DataField({ label, children }) { return <div className="record-field"><dt>{label}</dt><dd>{children || '—'}</dd></div>; }
 
 function openCard(event, item, onOpen) {
@@ -59,7 +46,7 @@ function OpportunityCard({ item, onOpen, onLocate, nested = false }) {
   const project = findProject(item.projectId);
   return <article className={`business-card opportunity-card ${nested ? 'nested-card' : ''}`} data-opportunity-id={item.id} onClick={event => openCard(event, item, onOpen)}>
     <button className="record-name" onClick={() => onOpen(item)}>{item.name}</button>
-    <div className="record-tags">{nested && <Tag tone={item.status === '已输单' ? 'red' : 'blue'}>{item.status}</Tag>}<StageDurationTag item={item} /></div>
+    <div className="record-tags"><span className="record-classification"><ProjectLevelTag level={project?.level} />{nested && <Tag tone={item.status === '已输单' ? 'red' : 'blue'}>{item.status}</Tag>}</span><StageDurationTag item={item} /></div>
     <dl className="record-fields">
       <DataField label="关联项目"><button className="record-project-link" onClick={() => onLocate(item.projectId)} title={`定位项目：${project?.name}`}><span>{project?.name}</span><Icon name="arrow" size={12} /></button></DataField>
       <DataField label="客户">{project?.customer}</DataField>
@@ -76,6 +63,7 @@ function ProjectCard({ project, expanded, toggle, highlighted, onOpen, onLocate,
   const related = projectOpportunities(project.id);
   return <article className={`business-card project-card ${highlighted ? 'highlighted' : ''}`} data-project-id={project.id} onClick={event => openCard(event, project, onProject)}>
     <button className="record-name" onClick={() => onProject(project)}>{project.name}</button>
+    <div className="record-tags"><ProjectLevelTag level={project.level} /></div>
     <dl className="record-fields"><DataField label="客户">{project.customer}</DataField><DataField label="负责人">{project.pm}</DataField><DataField label="国家地区">{project.region}</DataField><DataField label="交付经理">{project.deliveryManager || project.owner}</DataField><DataField label="项目金额">¥ {amount(project.contribution)}</DataField><DataField label="实收金额">¥ {amount(project.collected)}</DataField><DataField label={project.designType === '暂无' ? '方案设计' : project.designType}>{project.designStatus === '暂无' ? '暂无' : <Tag tone={project.designStatus === '已设计' ? 'teal' : 'purple'}>{project.designStatus}</Tag>}</DataField></dl>
     <button className={`expand-opps ${expanded ? 'expanded' : ''}`} aria-expanded={expanded} onClick={() => toggle(project.id)}><span>关联商机 <b>{related.length}</b></span><Icon name="chevronDown" size={14} /></button>
     {expanded && <div className="project-children">{related.map(item => <OpportunityCard key={item.id} item={item} onOpen={onOpen} onLocate={onLocate} nested />)}</div>}
@@ -93,13 +81,13 @@ export function Board({ filter, onOpportunity, onProject, locateId, setLocateId,
   const drag = useRef(null);
   const suppressClick = useRef(false);
   const stages = mode === 'project' ? PROJECT_STAGES : BOARD_OPPORTUNITY_STAGES;
-  const scopeItems = (mode === 'project' ? projects : opportunities.filter(item => BOARD_OPPORTUNITY_STAGES.includes(item.status))).filter(item => matchesFilters(item, filter) && matchesPeriod(item, filter.period));
+  const scopeItems = (mode === 'project' ? projects : opportunities.filter(item => BOARD_OPPORTUNITY_STAGES.includes(item.status))).filter(item => matchesFilters(item, filter) && matchesPeriod(item, filter.period, filter.dateRange));
   const items = scopeItems.filter(item => {
     const project = mode === 'project' ? item : findProject(item.projectId);
     return [project?.name, project?.customer].filter(Boolean).join(' ').toLowerCase().includes(query.trim().toLowerCase());
   });
   const toggle = id => setExpanded(old => old.includes(id) ? old.filter(value => value !== id) : [...old, id]);
-  useEffect(() => { setQuery(''); track.current?.scrollTo({ left: 0 }); }, [filter.departmentId, filter.employeeId, filter.period]);
+  useEffect(() => { setQuery(''); track.current?.scrollTo({ left: 0 }); }, [filter.departmentId, filter.employeeId, filter.period, filter.dateRange?.start, filter.dateRange?.end]);
   useEffect(() => { if (locateId) { setMode('project'); setQuery(''); setExpanded(old => [...new Set([...old, locateId])]); } }, [locateId]);
   useEffect(() => { if (locateId && mode === 'project') { const frame = requestAnimationFrame(() => track.current?.querySelector(`[data-project-id="${locateId}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })); return () => cancelAnimationFrame(frame); } }, [locateId, mode, query]);
 
