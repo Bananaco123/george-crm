@@ -67,7 +67,7 @@ node --test src/data.test.mjs src/conversations.test.mjs src/destinationData.tes
 
 ## 设计依据
 
-用户提供的业务后台及阶段条参考图：深蓝导航、浅灰蓝工作区、白色独立卡片、蓝色选中态、连续箭头阶段条使用低饱和渐变色，对应卡片左边缘使用同色细条，展开的关联商机按自身阶段着色。字段、角色与部门口径参考 GOS `src/pages/MindDashboard/ProjectDashboard.jsx` 及 `src/mock/projectDashboard.js`，颜色和字号参照其现有主题。页面只保留中文业务文案与必要品牌、专有名称，不添加装饰性英文或口号。
+用户提供的业务后台及阶段条参考图：深蓝导航、浅灰蓝工作区、白色独立卡片、蓝色选中态、连续箭头阶段条使用低饱和渐变色，对应最外层卡片左边缘使用同色细条；展开的关联商机不重复显示色条，仍保留自身阶段标签。字段、角色与部门口径参考 GOS `src/pages/MindDashboard/ProjectDashboard.jsx` 及 `src/mock/projectDashboard.js`，颜色和字号参照其现有主题。页面只保留中文业务文案与必要品牌、专有名称，不添加装饰性英文或口号。
 
 海外业务 Mock 参考 GOS `src/mock/projectDashboard.js` 的 Kanchan、Joseph、Sofia、Emily、Miguel 等项目，以及 `src/mock/operationsDashboard.js` 的新加坡、马来西亚、沙特客户场景。关联会话入口参考 `src/pages/MindDashboard/ProjectDashboard.jsx`；消息字段参考 `src/mock/imStore.js`。演示会话按当前项目、客户与商机分别生成，不共用其他客户的历史会话。
 

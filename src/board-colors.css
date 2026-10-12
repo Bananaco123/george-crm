@@ -1,4 +1,4 @@
-/* 阶段配色单独维护；可移除此导入恢复此前看板配色。色条跟随记录自身阶段。 */
+/* 阶段配色单独维护；仅最外层卡片显示色条，展开的关联商机不重复显示。 */
 .board-panel :is(.pipeline-column,.business-card)[data-stage="洽谈中"],
 .board-panel :is(.pipeline-column,.business-card)[data-stage="待成交"]{--stage-start:#e9f2ff;--stage-end:#d8e8fd;--stage-text:#326396;--stage-rail:#578bc8}
 .board-panel :is(.pipeline-column,.business-card)[data-stage="报价中"]{--stage-start:#f0ecfb;--stage-end:#e3daf5;--stage-text:#735598;--stage-rail:#9680ba}
@@ -12,6 +12,5 @@
 .board-panel .business-card[data-stage="已拒绝"]{--stage-rail:#a1adbb}
 .board-panel .pipeline-column[data-stage]>.pipeline-step{background:linear-gradient(110deg,var(--stage-start),var(--stage-end));color:var(--stage-text);font-weight:650}
 .board-panel .pipeline-column[data-stage] .step-total{background:#ffffff80;color:inherit}
-.board-panel .business-card[data-stage]{position:relative;padding-left:16px}
-.board-panel .business-card[data-stage]::before{content:'';position:absolute;left:0;top:15px;bottom:15px;width:3px;border-radius:0 3px 3px 0;background:var(--stage-rail,#a1adbb);pointer-events:none}
-.board-panel .project-children .business-card[data-stage]{padding-left:13px}
+.board-panel .pipeline-cards>.business-card[data-stage]{position:relative;padding-left:16px}
+.board-panel .pipeline-cards>.business-card[data-stage]::before{content:'';position:absolute;left:0;top:15px;bottom:15px;width:3px;border-radius:0 3px 3px 0;background:var(--stage-rail,#a1adbb);pointer-events:none}
