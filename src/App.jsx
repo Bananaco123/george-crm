@@ -7,7 +7,7 @@ import DateRangeControl from './components/DateRangeControl.jsx';
 import FilterDropdown from './components/FilterDropdown.jsx';
 import DestinationPage from './components/DestinationPage.jsx';
 import ProjectLevelTag from './components/ProjectLevelTag.jsx';
-import { CRM_PAGES, readNavigation, navigationHash, metricDestination, filterConditions } from './navigation.js';
+import { CRM_PAGES, readNavigation, navigationHash, metricDestination } from './navigation.js';
 import ConversationPanel from './components/ConversationPanel.jsx';
 import StageDurationTag from './components/StageDurationTag.jsx';
 import { getRelatedConversations } from './conversations.js';
@@ -148,16 +148,6 @@ export default function App() {
     const destination = metricDestination(metric, filter, extra);
     navigate(destination.page, destination.conditions);
   };
-  const navigateProject = item => navigate('projects', { ...filterConditions(filter), projectId: item.id, name: item.name, level: item.level, stage: getProjectStatus(item) });
-  const navigateLinkedProject = id => {
-    const project = getProject(id);
-    if (!project) return;
-    const conditions = filterConditions(filter);
-    // 商机按方案经理筛选，关联项目按项目负责人筛选，不能沿用不适用的人员条件。
-    if (conditions.member !== 'all' && conditions.member !== project.responsibleEmployeeId) delete conditions.member;
-    if (!matchesPeriod(project, period, dateRange)) { delete conditions.start; delete conditions.end; delete conditions.period; }
-    navigate('projects', { ...conditions, projectId: project.id, name: project.name, level: project.level, stage: getProjectStatus(project) });
-  };
   const changeDestinationConditions = conditions => {
     window.history.replaceState(null, '', navigationHash(route.page, conditions));
     setRoute({ page: route.page, conditions });
@@ -168,7 +158,6 @@ export default function App() {
     const item = kind === 'opportunity' ? opportunities.find(item => item.id === row.opportunityId) : kind === 'task' ? tasks.find(item => item.id === row.taskId) : kind === 'project' ? getProject(row.projectId) : null;
     if (item) setDialog({ type: kind, item });
   };
-  const navigateOpportunity = item => navigate('opportunities', { ...filterConditions(filter), projectId: item.projectId, opportunityId: item.id, name: item.name, level: item.level, stage: item.status });
   const navigateTask = item => navigate('todos', { taskId: item.id, date: item.date, taskType: item.type, name: item.title, owner: item.owner, status: item.status === 'completed' ? '已完成' : '待处理' });
   const locateProject = id => {
     setDialog(null);
@@ -207,9 +196,9 @@ export default function App() {
           <div className="workbench-heading-main">
             <div className="workbench-title"><h1>工作台</h1></div>
             <div className="workbench-filters">
+              <DateRangeControl period={period} dateRange={dateRange} onChange={(value, range) => { setPeriod(value); if (range) setDateRange(range); setLocateId(null); }} />
               <FilterDropdown label="部门筛选" className="department-filter" value={departmentId} options={[{ value: 'all', label: '全部部门' }, ...ORG_TREE.map(department => ({ value: department.id, label: department.name }))]} onChange={id => { setDepartmentId(id); if (id !== 'all' && !EMPLOYEES.some(item => item.id === employeeId && item.departmentId === id)) setEmployeeId('all'); setLocateId(null); }} />
               <FilterDropdown label="成员筛选" className="member-filter" value={employeeId} options={[{ value: 'all', label: '全部成员' }, ...members.map(member => ({ value: member.id, label: member.name }))]} onChange={id => { setEmployeeId(id); setLocateId(null); }} />
-              <DateRangeControl period={period} dateRange={dateRange} onChange={(value, range) => { setPeriod(value); if (range) setDateRange(range); setLocateId(null); }} />
             </div>
           </div>
           <div className="workbench-time"><Clock /></div>
@@ -217,7 +206,7 @@ export default function App() {
         <div className="workbench-columns">
           <div className="workbench-primary">
             <Metrics filter={filter} onNavigate={navigateMetric} />
-            <Board filter={filter} onProject={navigateProject} onOpportunity={navigateOpportunity} locateId={locateId} setLocateId={setLocateId} onLocate={navigateLinkedProject} />
+            <Board filter={filter} onProject={openProject} onOpportunity={openOpportunity} locateId={locateId} setLocateId={setLocateId} onLocate={locateProject} />
             <Attention count={dormantCustomers.length} onDormant={() => setDialog({ type: 'dormant' })} onSchedule={() => setDialog({ type: 'schedule' })} onAnalysis={() => setDialog({ type: 'analysis' })} />
           </div>
           <Schedule tasks={tasks} selectedDate={selectedDate} setSelectedDate={setSelectedDate} onTask={navigateTask} focusRequest={taskFocusRequest} />
@@ -234,7 +223,7 @@ export default function App() {
       {dialog.type === 'dormant' && <><div className="dormant-list">{dormantCustomers.map(customer => { const added = tasks.some(item => item.customerId === customer.id && pending(item)); return <article key={customer.id}><div className="dormant-avatar">{customer.name.slice(0, 1)}</div><div><h3>{customer.name}<Badge color="amber">{customer.days} 天未联系</Badge></h3><p>{customer.company} · 负责人 {customer.owner}</p><small>关注：{customer.interest}</small></div><button className={added ? 'secondary-button' : 'primary-button'} disabled={added} onClick={() => addFollowup(customer)}>{added ? '已添加待办' : '添加跟进'}</button></article>; })}{!dormantCustomers.length && <p className="dialog-intro">当前范围暂无沉睡客户</p>}</div><p className="detail-note">添加后会出现在本地工作台的待办与日历中，不会向客户发送消息。</p></>}
       {dialog.type === 'schedule' && <>{[{ title: '今日待办摘要', time: '每个工作日 09:00', description: '当天的跟进、项目与报价待办' }, { title: '逾期待办提醒', time: '每个工作日 16:30', description: '尚未处理的逾期事项' }, { title: '沉睡客户回访', time: '每周一 10:00', description: '长期未联系的客户名单' }].map(item => <div className="schedule-row" key={item.title}><span className="attention-icon blue"><Icon name="clock" size={20} /></span><div><strong>{item.title}</strong><p>{item.time} · 北京时间</p><small>{item.description}</small></div><Badge color="slate">未启用</Badge></div>)}<div className="info-callout"><Icon name="bell" size={18} /><span>当前为提醒计划预览，实际推送需接入任务服务和通知渠道。</span></div></>}
       {dialog.type === 'analysis' && <><p className="dialog-intro">以下为全部演示数据的规则分析，尚未接入实时 AI 服务。</p><div className="insight-card"><Badge color="purple">报价推进</Badge><h3>{opportunities.filter(item => item.status === '报价中').length} 个商机处于报价中</h3><p>确认客户反馈与报价版本，明确下一次沟通时间。</p></div><div className="insight-card"><Badge color="amber">成交衔接</Badge><h3>{opportunities.filter(item => item.status === '待下单').length} 个商机等待下单</h3><p>报价确认后，需由 ERP 收款达到备货标准并确定生产，才进入交付中。</p></div><div className="insight-card"><Badge color="blue">跟进提醒</Badge><h3>{tasks.filter(item => pending(item) && item.date < TODAY).length} 项待办已逾期</h3><p>检查联系计划和业务进度，跟进尚未获得反馈的事项。</p></div></>}
-      {dialog.type === 'help' && <><div className="help-list"><p><b>01</b><span><strong>部门与成员</strong>部门、成员与统计周期共同筛选业务概览和项目商机，项目商机按创建日期统计。右侧日历与待办保留独立的日期和类型筛选。</span></p><p><b>02</b><span><strong>项目商机</strong>切换商机视图或项目视图，按项目名称或客户搜索。看板整个内容区均可按住左右拖动，阶段条上也可使用滚轮横向浏览。单击卡片携带筛选条件跳转至对应模块，可继续查看关联详情。</span></p><p><b>03</b><span><strong>日历与待办</strong>在我的日历中选择日期，查看当天待办；待办中心可切换全部待办、跟进待办、项目待办和报价待办。</span></p></div><div className="info-callout"><Icon name="help" size={18} /><span>工作台提供业务概览与看板，其他模块使用通用示例列表展示筛选结果。全部业务数据用于演示，未连接实际客户、订单或通知系统。</span></div></>}
+      {dialog.type === 'help' && <><div className="help-list"><p><b>01</b><span><strong>部门与成员</strong>部门、成员与统计周期共同筛选业务概览和项目商机，项目商机按创建日期统计。右侧日历与待办保留独立的日期和类型筛选。</span></p><p><b>02</b><span><strong>项目商机</strong>切换商机视图或项目视图，按项目名称或客户搜索。看板整个内容区均可按住左右拖动，阶段条上也可使用滚轮横向浏览。单击卡片直接打开项目或商机详情，点击关联项目可在看板中定位。业务概览指标卡片携带筛选条件跳转至对应列表。</span></p><p><b>03</b><span><strong>日历与待办</strong>在我的日历中选择日期，查看当天待办；待办中心可切换全部待办、跟进待办、项目待办和报价待办。</span></p></div><div className="info-callout"><Icon name="help" size={18} /><span>工作台提供业务概览与看板，其他模块使用通用示例列表展示筛选结果。全部业务数据用于演示，未连接实际客户、订单或通知系统。</span></div></>}
     </Dialog>}
     {toast && <div className="toast" role="status"><Icon name="checkCircle" size={17} />{toast}</div>}
   </div>;
