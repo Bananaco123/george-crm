@@ -1,0 +1,41 @@
+/* 顶部筛选控件：独立于看板卡片样式，采用统一圆角、浅蓝选中态。 */
+.workbench-heading { min-height: 38px; }
+.workbench-filters { gap: 10px; }
+.workbench-filters .department-filter { --filter-width: 154px; }
+.workbench-filters .member-filter { --filter-width: 118px; }
+.inline-date-range { display: flex; align-items: center; flex: none; gap: 12px; }
+.inline-date-range .global-period { height: 38px; padding: 3px; gap: 1px; background: #f0f3f8; border: 0; border-radius: 10px; }
+.inline-date-range .global-period button { height: 32px; padding: 0 11px; border-radius: 8px; font-size: 12px; line-height: 1; color: #7c8fa9; white-space: nowrap; }
+.inline-date-range .global-period button.selected { background: #e7f2ff; color: #1680ff; box-shadow: none; font-weight: 650; }
+.inline-date-range .global-period button:hover:not(.selected) { background: #eaf0f8; color: #42648e; }
+.inline-date-range .global-period button:focus-visible { outline: 2px solid #3d8eff; outline-offset: -2px; }
+.inline-date-fields { display: flex; align-items: center; gap: 7px; position: relative; }
+.range-date-field { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 9px; width: 124px; height: 38px; padding: 0 11px; border: 1px solid #dce5f2; border-radius: 9px; background: #fff; color: #4a607f; font-size: 12px; white-space: nowrap; cursor: pointer; transition: border-color .15s, box-shadow .15s; }
+.range-date-field>span { font-variant-numeric: tabular-nums; pointer-events: none; }
+.range-date-field>svg { flex: none; color: #35475f; pointer-events: none; }
+.range-date-field:hover { border-color: #a6c8ee; }
+.range-date-field:focus-within { border-color: #3388ff; box-shadow: 0 0 0 3px #e2edff; }
+.range-date-field input { position: absolute; inset: 0; width: 100%; height: 100%; min-width: 0; margin: 0; padding: 0; border: 0; opacity: 0; cursor: pointer; }
+.date-range-separator { font-size: 14px; color: #98a8bd; }
+.range-date-field.has-error { border-color: #db8989; }
+.inline-range-error { position: absolute; right: 0; top: calc(100% + 8px); z-index: 24; padding: 8px 12px; margin: 0; background: #fff; border: 1px solid #f0d7d7; border-radius: 7px; box-shadow: 0 5px 18px #233b5612; color: #b54d4d; font-size: 11px; white-space: nowrap; }
+@media(max-width:1600px) {
+  .workbench-filters { gap: 8px; }
+  .workbench-filters .department-filter { --filter-width: 140px; }
+  .workbench-filters .member-filter { --filter-width: 100px; }
+  .inline-date-range { gap: 9px; }
+  .inline-date-range .global-period button { padding-inline: 9px; }
+  .range-date-field { width: 116px; padding-inline: 8px; gap: 6px; }
+}
+@media(max-width:1450px) {
+  .workbench-heading-main { gap: 8px; }
+  .workbench-title h1 { font-size: 21px; }
+  .workbench-filters { gap: 7px; }
+  .workbench-filters .department-filter { --filter-width: 130px; }
+  .workbench-filters .member-filter { --filter-width: 92px; }
+  .workbench-filters .filter-dropdown-trigger { padding-inline: 9px; gap: 6px; font-size: 12px; }
+  .inline-date-range { gap: 8px; }
+  .inline-date-range .global-period button { padding-inline: 7px; font-size: 11px; }
+  .inline-date-fields { gap: 5px; }
+  .range-date-field { width: 109px; font-size: 11px; }
+}

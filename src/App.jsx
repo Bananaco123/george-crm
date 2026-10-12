@@ -4,6 +4,7 @@ import { OPPORTUNITY_STAGES, ORG_TREE, EMPLOYEES, projects, opportunities, tasks
 import { Board, Schedule, Attention } from './components/Workbench.jsx';
 import Metrics from './components/Metrics.jsx';
 import DateRangeControl from './components/DateRangeControl.jsx';
+import FilterDropdown from './components/FilterDropdown.jsx';
 import DestinationPage from './components/DestinationPage.jsx';
 import ProjectLevelTag from './components/ProjectLevelTag.jsx';
 import { CRM_PAGES, readNavigation, navigationHash, metricDestination, filterConditions } from './navigation.js';
@@ -187,8 +188,8 @@ export default function App() {
           <div className="workbench-heading-main">
             <div className="workbench-title"><h1>工作台</h1></div>
             <div className="workbench-filters">
-              <label className="department-select"><Icon name="filter" size={15} /><span>部门</span><select aria-label="部门筛选" value={departmentId} onChange={event => { const id = event.target.value; setDepartmentId(id); if (id !== 'all' && !EMPLOYEES.some(item => item.id === employeeId && item.departmentId === id)) setEmployeeId('all'); setLocateId(null); }}><option value="all">全部部门</option>{ORG_TREE.map(department => <option value={department.id} key={department.id}>{department.name}</option>)}</select></label>
-              <label className="member-select"><Icon name="users" size={15} /><span>成员</span><select value={employeeId} aria-label="成员筛选" onChange={event => { setEmployeeId(event.target.value); setLocateId(null); }}><option value="all">全部成员</option>{members.map(member => <option key={member.id} value={member.id}>{member.name}</option>)}</select></label>
+              <FilterDropdown label="部门筛选" className="department-filter" value={departmentId} options={[{ value: 'all', label: '全部部门' }, ...ORG_TREE.map(department => ({ value: department.id, label: department.name }))]} onChange={id => { setDepartmentId(id); if (id !== 'all' && !EMPLOYEES.some(item => item.id === employeeId && item.departmentId === id)) setEmployeeId('all'); setLocateId(null); }} />
+              <FilterDropdown label="成员筛选" className="member-filter" value={employeeId} options={[{ value: 'all', label: '全部成员' }, ...members.map(member => ({ value: member.id, label: member.name }))]} onChange={id => { setEmployeeId(id); setLocateId(null); }} />
               <DateRangeControl period={period} dateRange={dateRange} onChange={(value, range) => { setPeriod(value); if (range) setDateRange(range); setLocateId(null); }} />
             </div>
           </div>
