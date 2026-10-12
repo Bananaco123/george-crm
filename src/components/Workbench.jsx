@@ -8,6 +8,7 @@ const amount = value => new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 
 const findProject = id => projects.find(item => item.id === id);
 const projectOpportunities = id => opportunities.filter(item => item.projectId === id);
 const isPending = item => item.status !== 'completed';
+const BOARD_VIEWS = [{ value: 'opportunity', label: '商机视图' }, { value: 'project', label: '项目视图' }];
 function Tag({ children, tone = 'blue' }) { return <span className={`badge ${tone}`}>{children}</span>; }
 function SmallButton({ icon, label, onClick, disabled }) { return <button className="icon-button" aria-label={label} title={label} onClick={onClick} disabled={disabled}><Icon name={icon} size={16} /></button>; }
 
@@ -164,16 +165,27 @@ export function Board({ filter, onOpportunity, onProject, locateId, setLocateId,
     }
   };
   const changeMode = value => { setMode(value); setLocateId(null); track.current?.scrollTo({ left: 0 }); };
-  return <section className="panel board-panel" id="business-board">
+  const changeViewWithKeyboard = (event, index) => {
+    let next;
+    if (event.key === 'ArrowRight') next = (index + 1) % BOARD_VIEWS.length;
+    else if (event.key === 'ArrowLeft') next = (index + BOARD_VIEWS.length - 1) % BOARD_VIEWS.length;
+    else if (event.key === 'Home') next = 0;
+    else if (event.key === 'End') next = BOARD_VIEWS.length - 1;
+    else return;
+    event.preventDefault();
+    changeMode(BOARD_VIEWS[next].value);
+    event.currentTarget.parentElement.querySelectorAll('[role="tab"]')[next]?.focus();
+  };
+  return <section className="panel board-panel" id="business-board" aria-labelledby="business-board-title">
     <div className="section-heading board-heading">
-      <h2>项目商机</h2>
+      <h2 className="board-title" id="business-board-title">项目商机</h2>
+      <div className="board-view-tabs" role="tablist" aria-label="看板视图">{BOARD_VIEWS.map((view, index) => <button key={view.value} type="button" role="tab" className="board-view-tab" id={`board-view-${view.value}`} aria-selected={mode === view.value} aria-controls="business-board-content" tabIndex={mode === view.value ? 0 : -1} onClick={() => changeMode(view.value)} onKeyDown={event => changeViewWithKeyboard(event, index)}>{view.label}</button>)}</div>
       <div className="board-tools">
         <label className="search-input"><Icon name="search" size={15} /><input aria-label="搜索项目名称和客户" placeholder="搜索项目名称和客户" value={query} onChange={event => { setQuery(event.target.value); setLocateId(null); track.current?.scrollTo({ left: 0 }); }} />{query && <button aria-label="清空搜索" onClick={() => setQuery('')}><Icon name="close" size={13} /></button>}</label>
-        <div className="segmented" aria-label="看板视图"><button aria-pressed={mode === 'opportunity'} className={mode === 'opportunity' ? 'selected' : ''} onClick={() => changeMode('opportunity')}>商机视图</button><button aria-pressed={mode === 'project'} className={mode === 'project' ? 'selected' : ''} onClick={() => changeMode('project')}>项目视图</button></div>
       </div>
     </div>
     {locateId && <div className="locate-notice"><Icon name="target" size={14} />{findProject(locateId)?.name}<button onClick={() => setLocateId(null)}>取消定位</button></div>}
-    <div className={`pipeline-viewport ${edges.left ? 'has-left' : ''} ${edges.right ? 'has-right' : ''}`}>
+    <div className={`pipeline-viewport ${edges.left ? 'has-left' : ''} ${edges.right ? 'has-right' : ''}`} id="business-board-content" role="tabpanel" aria-labelledby={`board-view-${mode}`}>
       <div className={`pipeline-scroll ${dragging ? 'is-dragging' : ''}`} ref={track} tabIndex={0} aria-label={`${mode === 'project' ? '项目' : '商机'}阶段进度图`} onPointerDown={startDrag} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={endDrag} onClickCapture={cancelDragClick} onPointerLeave={() => { if (!drag.current?.moved) drag.current = null; }} onLostPointerCapture={() => { drag.current = null; setDragging(false); }}>
         <div className="pipeline-grid" style={{ '--stage-count': stages.length, '--visible-stages': Math.min(stages.length, 4.5) }}>{stages.map(stage => {
           const records = items.filter(item => (mode === 'project' ? getProjectStatus(item) : item.status) === stage);
