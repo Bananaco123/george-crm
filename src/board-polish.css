@@ -1,0 +1,185 @@
+/* 看板视觉层：独立于业务逻辑，移除此文件的导入即可恢复原有样式。 */
+.board-panel .board-heading {
+  padding: 18px 20px;
+}
+
+.board-panel .pipeline-viewport {
+  margin-inline: 18px;
+}
+
+.board-panel .pipeline-step {
+  height: 42px;
+  font-weight: 600;
+  letter-spacing: .1px;
+}
+
+.board-panel .step-total {
+  min-width: 22px;
+  height: 21px;
+  font-variant-numeric: tabular-nums;
+}
+
+.board-panel .pipeline-cards {
+  gap: 14px;
+  padding: 14px 10px 16px;
+  min-height: 420px;
+  max-height: 675px;
+  background: #f3f6fa;
+  border-right-color: #e1e8f1;
+}
+
+.board-panel .pipeline-column:first-child .pipeline-cards,
+.board-panel .pipeline-column:last-child .pipeline-cards {
+  padding-inline: 10px;
+  background: #f3f6fa;
+}
+
+.board-panel .pipeline-column .pipeline-cards:empty {
+  background: transparent;
+  border-right-color: transparent;
+}
+
+.board-panel .business-card {
+  flex: none;
+  min-width: 0;
+  padding: 16px 12px 13px;
+  border: 1px solid #dce5ef;
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: 0 2px 4px #16355506;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.board-panel .business-card:hover {
+  border-color: #aac3df;
+  box-shadow: 0 3px 10px #1635550b;
+}
+
+.board-panel .business-card.highlighted {
+  border-color: #2e7bd6;
+  box-shadow: 0 0 0 2px #2e7bd61c;
+}
+
+.board-panel .business-card .record-name {
+  color: #214c7e;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.board-panel .business-card .record-name:hover {
+  color: #2e7bd6;
+}
+
+.board-panel .record-tags {
+  gap: 7px;
+  row-gap: 6px;
+  margin-top: 10px;
+}
+
+.board-panel .record-fields {
+  gap: 8px;
+  margin-top: 14px;
+  padding: 11px 10px;
+  border: 1px solid #edf1f6;
+  border-radius: 6px;
+  background: #f7f9fc;
+}
+
+.board-panel .record-field {
+  grid-template-columns: 54px minmax(0, 1fr);
+  gap: 8px;
+  line-height: 1.6;
+}
+
+.board-panel .record-field dt {
+  color: #8190a5;
+  font-size: 11px;
+}
+
+.board-panel .record-field dd {
+  color: #45576d;
+  font-size: 12px;
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+
+.board-panel .record-field:has(.record-project-link) {
+  padding-bottom: 9px;
+  border-bottom: 1px solid #e7edf4;
+}
+
+.board-panel .record-project-link {
+  color: #527ba8;
+  line-height: 1.6;
+}
+
+.board-panel .record-project-link:hover {
+  color: #2e7bd6;
+}
+
+.board-panel .record-field:has(time) {
+  padding-top: 8px;
+  border-top: 1px solid #e7edf4;
+}
+
+.board-panel .record-field time {
+  color: #8190a5;
+  font-size: 11px;
+}
+
+.board-panel .business-card .expand-opps {
+  margin-top: 12px;
+  padding: 11px 1px 0;
+  color: #60768f;
+  border-top-color: #e8eef5;
+}
+
+.board-panel .business-card .expand-opps b {
+  display: inline-block;
+  min-width: 20px;
+  margin-left: 6px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: #eef4fb;
+  color: #527ba8;
+  text-align: center;
+}
+
+.board-panel .project-children {
+  gap: 12px;
+  margin: 12px 0 0;
+  min-width: 0;
+}
+
+.board-panel .project-children .business-card {
+  flex: none;
+  padding: 12px 9px 10px;
+  border-color: #dce6f2;
+  background: #fff;
+  box-shadow: none;
+}
+
+.board-panel .project-children .business-card:hover {
+  border-color: #aac3df;
+}
+
+.board-panel .project-children .record-name {
+  font-size: 13px;
+}
+
+.board-panel .project-children .record-fields {
+  padding: 10px 8px;
+  margin-top: 12px;
+}
+
+.board-panel .project-children .record-field {
+  gap: 6px;
+}
+
+@media (min-width: 1650px) {
+  .board-panel .pipeline-cards {
+    max-height: 700px;
+  }
+}
