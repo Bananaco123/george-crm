@@ -130,17 +130,40 @@
 }
 
 .board-panel .business-card .expand-opps {
-  margin-top: 12px;
-  padding: 11px 1px 0;
+  width: 100%;
+  min-height: 38px;
+  margin: 12px 0 0;
+  padding: 8px 10px;
+  gap: 10px;
   color: #60768f;
-  border-top-color: #e8eef5;
+  line-height: 20px;
+  border: 1px solid #e8eef5;
+  border-radius: 6px;
+  background: #f8fafc;
+}
+
+.board-panel .business-card .expand-opps:hover,
+.board-panel .business-card .expand-opps.expanded {
+  color: #426992;
+  border-color: #dce7f3;
+  background: #f1f6fc;
+}
+
+.board-panel .business-card .expand-opps > span {
+  gap: 6px;
+  min-width: 0;
+}
+
+.board-panel .business-card .expand-opps > svg {
+  flex: none;
 }
 
 .board-panel .business-card .expand-opps b {
   display: inline-block;
   min-width: 20px;
-  margin-left: 6px;
-  padding: 1px 5px;
+  margin-left: 0;
+  padding: 0 5px;
+  line-height: 20px;
   border-radius: 4px;
   background: #eef4fb;
   color: #527ba8;
@@ -148,13 +171,15 @@
 }
 
 .board-panel .project-children {
-  gap: 12px;
-  margin: 12px 0 0;
+  gap: 10px;
+  margin: 10px 0 0;
   min-width: 0;
 }
 
 .board-panel .project-children .business-card {
   flex: none;
+  width: 100%;
+  margin: 0;
   padding: 12px 9px 10px;
   border-color: #dce6f2;
   background: #fff;
