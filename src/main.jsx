@@ -5,6 +5,7 @@ import './styles.css';
 import './workbench.css';
 import './workbench-features.css';
 import './board-polish.css';
+import './board-colors.css';
 import './filter-toolbar.css';
 
 createRoot(document.getElementById('root')).render(<React.StrictMode><App /></React.StrictMode>);

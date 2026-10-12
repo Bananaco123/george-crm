@@ -1,0 +1,17 @@
+/* 阶段配色单独维护；可移除此导入恢复此前看板配色。色条跟随记录自身阶段。 */
+.board-panel :is(.pipeline-column,.business-card)[data-stage="洽谈中"],
+.board-panel :is(.pipeline-column,.business-card)[data-stage="待成交"]{--stage-start:#e9f2ff;--stage-end:#d8e8fd;--stage-text:#326396;--stage-rail:#578bc8}
+.board-panel :is(.pipeline-column,.business-card)[data-stage="报价中"]{--stage-start:#f0ecfb;--stage-end:#e3daf5;--stage-text:#735598;--stage-rail:#9680ba}
+.board-panel :is(.pipeline-column,.business-card)[data-stage="待下单"],
+.board-panel :is(.pipeline-column,.business-card)[data-stage="部分成交"]{--stage-start:#fff3db;--stage-end:#f5e3bb;--stage-text:#91651f;--stage-rail:#c59b50}
+.board-panel :is(.pipeline-column,.business-card)[data-stage="交付中"]{--stage-start:#e3f4f7;--stage-end:#cce8ee;--stage-text:#347583;--stage-rail:#57a1ad}
+.board-panel :is(.pipeline-column,.business-card)[data-stage="已完成"],
+.board-panel :is(.pipeline-column,.business-card)[data-stage="全部成交"]{--stage-start:#e6f4ed;--stage-end:#cfe9da;--stage-text:#357653;--stage-rail:#64a17d}
+.board-panel :is(.pipeline-column,.business-card)[data-stage="已输单"]{--stage-start:#f4ebee;--stage-end:#e6d8df;--stage-text:#885e70;--stage-rail:#b18498}
+.board-panel .business-card[data-stage="待接受"],
+.board-panel .business-card[data-stage="已拒绝"]{--stage-rail:#a1adbb}
+.board-panel .pipeline-column[data-stage]>.pipeline-step{background:linear-gradient(110deg,var(--stage-start),var(--stage-end));color:var(--stage-text);font-weight:650}
+.board-panel .pipeline-column[data-stage] .step-total{background:#ffffff80;color:inherit}
+.board-panel .business-card[data-stage]{position:relative;padding-left:16px}
+.board-panel .business-card[data-stage]::before{content:'';position:absolute;left:0;top:15px;bottom:15px;width:3px;border-radius:0 3px 3px 0;background:var(--stage-rail,#a1adbb);pointer-events:none}
+.board-panel .project-children .business-card[data-stage]{padding-left:13px}
