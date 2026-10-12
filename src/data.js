@@ -261,6 +261,55 @@ export function getProjectStatus(project, items = opportunities) {
   return '待成交';
 }
 
+/**
+ * 项目阶段由有效产品商机的创建、成交事件推导，不使用交付完成日或设计服务日期。
+ * 按天合并事件，保留当前连续阶段的起点；新增未成交产品可以使全部成交回到部分成交。
+ * 关键日期缺失、越界或存在没有恢复日期的历史项目输单时，返回 null，避免虚构停留时间。
+ */
+export function getProjectStageEnteredAt(project, items = opportunities) {
+  if (!project || !Array.isArray(items)) return null;
+  const validDate = value => (typeof value === 'string' || value instanceof Date) && value ? dateKey(value) : '';
+  const createdAt = validDate(project.createdAt);
+  if (!createdAt || createdAt > TODAY) return null;
+  const withinProject = value => {
+    const date = validDate(value);
+    return date && date >= createdAt && date <= TODAY ? date : null;
+  };
+  if (project.lost) return withinProject(project.lostAt);
+  // 只有 lostAt 而没有撤销事件，无法确定项目何时重新进入当前聚合阶段。
+  if (project.lostAt) return null;
+  const included = items.filter(item => item.projectId === project.id && isCountedProduct(item));
+  if (!included.some(isWon)) return createdAt;
+
+  const events = new Map();
+  const addEvent = (date, kind) => {
+    const event = events.get(date) ?? { created: 0, won: 0 };
+    event[kind] += 1;
+    events.set(date, event);
+  };
+  for (const item of included) {
+    const itemCreatedAt = withinProject(item.createdAt);
+    if (!itemCreatedAt) return null;
+    addEvent(itemCreatedAt, 'created');
+    if (isWon(item)) {
+      const closedAt = withinProject(item.closedAt);
+      if (!closedAt || closedAt < itemCreatedAt) return null;
+      addEvent(closedAt, 'won');
+    }
+  }
+  let total = 0, won = 0, stage = '待成交', enteredAt = createdAt;
+  for (const [date, event] of [...events].sort(([left], [right]) => left.localeCompare(right))) {
+    total += event.created;
+    won += event.won;
+    const nextStage = total > 0 && won === total ? '全部成交' : won > 0 ? '部分成交' : '待成交';
+    if (nextStage !== stage) {
+      stage = nextStage;
+      enteredAt = date;
+    }
+  }
+  return enteredAt;
+}
+
 const taskRows = [
   ['T-001', '确认 Kanchan 全屋柜体报价', '报价', 0, 0, '09:30', 'pending', '与 Kanchan Rajput 确认柜体饰面与五金选型，更新第二版报价。'],
   ['T-002', 'Joseph 别墅门窗交付沟通', '跟进', 1, 0, '11:00', 'pending', '确认现场复尺结果，并同步到货与安装时间。'],

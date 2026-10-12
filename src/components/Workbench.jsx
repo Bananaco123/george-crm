@@ -43,13 +43,13 @@ function openCard(event, item, onOpen) {
   onOpen(item);
 }
 
-function OpportunityCard({ item, onOpen, onLocate, nested = false }) {
+function OpportunityCard({ item, onOpen, onRelatedProject, nested = false }) {
   const project = findProject(item.projectId);
   return <article className={`business-card opportunity-card ${nested ? 'nested-card' : ''}`} data-stage={item.status} data-opportunity-id={item.id} onClick={event => openCard(event, item, onOpen)}>
     <button className="record-name" onClick={() => onOpen(item)}>{item.name}</button>
     <div className="record-tags"><span className="record-classification"><ProjectLevelTag level={project?.level} />{nested && <Tag tone={item.status === '已输单' ? 'red' : 'blue'}>{item.status}</Tag>}</span><StageDurationTag item={item} /></div>
     <dl className="record-fields">
-      <DataField label="关联项目"><button className="record-project-link" onClick={() => onLocate(item.projectId)} title={`定位项目：${project?.name}`}><span>{project?.name}</span><Icon name="arrow" size={12} /></button></DataField>
+      <DataField label="关联项目"><button className="record-project-link" onClick={() => onRelatedProject(item.projectId)} title={`查看项目：${project?.name}`}><span>{project?.name}</span><Icon name="arrow" size={12} /></button></DataField>
       <DataField label="客户">{project?.customer}</DataField>
       <DataField label="方案经理">{item.solutionManager}</DataField>
       <DataField label="商机部门">{item.opportunityDepartment}</DataField>
@@ -60,18 +60,18 @@ function OpportunityCard({ item, onOpen, onLocate, nested = false }) {
   </article>;
 }
 
-function ProjectCard({ project, expanded, toggle, highlighted, onOpen, onLocate, onProject }) {
+function ProjectCard({ project, expanded, toggle, highlighted, onOpen, onRelatedProject, onProject }) {
   const related = projectOpportunities(project.id);
   return <article className={`business-card project-card ${highlighted ? 'highlighted' : ''}`} data-stage={getProjectStatus(project)} data-project-id={project.id} onClick={event => openCard(event, project, onProject)}>
     <button className="record-name" onClick={() => onProject(project)}>{project.name}</button>
     <div className="record-tags"><ProjectLevelTag level={project.level} /></div>
     <dl className="record-fields"><DataField label="客户">{project.customer}</DataField><DataField label="负责人">{project.pm}</DataField><DataField label="国家地区">{project.region}</DataField><DataField label="交付经理">{project.deliveryManager || project.owner}</DataField><DataField label="项目金额">¥ {amount(project.contribution)}</DataField><DataField label="实收金额">¥ {amount(project.collected)}</DataField><DataField label={project.designType === '暂无' ? '方案设计' : project.designType}>{<Tag tone={project.designStatus === '暂无' ? 'slate' : project.designStatus === '已设计' ? 'teal' : 'purple'}>{project.designStatus === '暂无' ? '未发起' : project.designStatus}</Tag>}</DataField><DataField label="创建于"><time dateTime={project.createdAt}>{project.createdAt}</time></DataField></dl>
     <button className={`expand-opps ${expanded ? 'expanded' : ''}`} aria-expanded={expanded} onClick={() => toggle(project.id)}><span>关联商机 <b>{related.length}</b></span><Icon name="chevronDown" size={14} /></button>
-    {expanded && <div className="project-children">{related.map(item => <OpportunityCard key={item.id} item={item} onOpen={onOpen} onLocate={onLocate} nested />)}</div>}
+    {expanded && <div className="project-children">{related.map(item => <OpportunityCard key={item.id} item={item} onOpen={onOpen} onRelatedProject={onRelatedProject} nested />)}</div>}
   </article>;
 }
 
-export function Board({ filter, onOpportunity, onProject, locateId, setLocateId, onLocate }) {
+export function Board({ filter, onOpportunity, onProject, locateId, setLocateId, onRelatedProject }) {
   const [mode, setMode] = useState('opportunity');
   const [query, setQuery] = useState('');
   const [expanded, setExpanded] = useState([]);
@@ -191,7 +191,7 @@ export function Board({ filter, onOpportunity, onProject, locateId, setLocateId,
           const records = items.filter(item => (mode === 'project' ? getProjectStatus(item) : item.status) === stage);
           return <section className={`pipeline-column ${stage === '已输单' ? 'loss-stage' : ''}`} key={stage} data-stage={stage}>
             <div className="pipeline-step" title="按住拖动，或滚动滚轮横向浏览"><span className="step-name">{stage}</span><span className="step-total">{records.length}</span></div>
-            <div className="pipeline-cards">{records.map(item => mode === 'project' ? <ProjectCard key={item.id} project={item} expanded={expanded.includes(item.id)} toggle={toggle} highlighted={locateId === item.id} onOpen={onOpportunity} onLocate={onLocate} onProject={onProject} /> : <OpportunityCard key={item.id} item={item} onOpen={onOpportunity} onLocate={onLocate} />)}</div>
+            <div className="pipeline-cards">{records.map(item => mode === 'project' ? <ProjectCard key={item.id} project={item} expanded={expanded.includes(item.id)} toggle={toggle} highlighted={locateId === item.id} onOpen={onOpportunity} onRelatedProject={onRelatedProject} onProject={onProject} /> : <OpportunityCard key={item.id} item={item} onOpen={onOpportunity} onRelatedProject={onRelatedProject} />)}</div>
           </section>;
         })}</div>
       </div>

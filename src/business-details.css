@@ -1,0 +1,101 @@
+/* 项目与商机详情内容：仅作用于右侧业务详情，不覆盖看板或其他弹窗。 */
+.business-details{container-type:inline-size;display:flex;flex-direction:column;gap:20px;color:#405573;font-size:13px;line-height:1.6;min-width:0}
+.business-details *{box-sizing:border-box}
+.business-details .bd-card{padding:22px;background:#fff;border:1px solid #e1e8f1;border-radius:13px;min-width:0;box-shadow:0 2px 6px #213d6203}
+.business-details .bd-identity{padding-bottom:0}
+.business-details .bd-identity-heading{display:flex;align-items:flex-start;gap:14px;min-width:0}
+.business-details .bd-object-icon{display:grid;place-items:center;flex:0 0 47px;height:47px;background:linear-gradient(135deg,#edf5ff,#dfeeff);border:1px solid #dce9fc;border-radius:12px;color:#4a82cb}
+.business-details .bd-title-block{min-width:0;flex:1}
+.business-details .bd-title-block h3{margin:0;font-size:21px;font-weight:650;line-height:1.45;color:#203f63;overflow-wrap:anywhere}
+.business-details .bd-title-block p{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 0;color:#8595ab;font-size:12px;line-height:1.5}
+.business-details .bd-title-block p span{color:#697e9b;font-variant-numeric:tabular-nums}
+.business-details .bd-identity-tags{display:flex;align-items:center;gap:8px;margin-top:19px;padding-bottom:20px;border-bottom:1px solid #edf1f6;flex-wrap:wrap}
+.business-details .bd-duration{margin-left:auto;display:inline-flex;min-width:0}
+.business-details .bd-duration-unknown{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:#8595aa;background:#f1f5fa;border-radius:5px;padding:4px 7px}
+.business-details .stage-duration-tag{font-size:11px;line-height:1.5;padding:4px 7px;white-space:nowrap}
+.business-details .project-level-tag[data-level]{display:inline-flex;align-items:center;border-width:1px;border-style:solid;font-size:11px;line-height:1.5;padding:3px 8px}
+.business-details .project-level-tag[data-level] b{font-size:12px}
+.business-details .bd-status{display:inline-flex;align-items:center;justify-content:center;border:1px solid transparent;border-radius:5px;padding:3px 8px;color:#577baf;background:#eef4fd;font-size:11px;font-weight:500;line-height:1.5;white-space:nowrap}
+.business-details .bd-status[data-status="报价中"],.business-details .bd-status[data-status="设计中"]{color:#79669e;background:#f3effa}
+.business-details .bd-status[data-status="待下单"],.business-details .bd-status[data-status="部分成交"]{color:#946c2c;background:#fff5e4}
+.business-details .bd-status[data-status="交付中"]{color:#318596;background:#eaf7f9}
+.business-details .bd-status[data-status="全部成交"],.business-details .bd-status[data-status="已完成"],.business-details .bd-status[data-status="已设计"]{color:#318675;background:#eaf7f2}
+.business-details .bd-status[data-status="已输单"],.business-details .bd-status[data-status="已拒绝"]{color:#a56673;background:#fcf0f3}
+.business-details .bd-status[data-status="待接受"],.business-details .bd-status[data-status="未发起"]{color:#7d899b;background:#f0f3f7}
+.business-details .bd-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 30px;margin:0;padding:20px 0;min-width:0}
+.business-details .bd-field{display:grid;grid-template-columns:76px minmax(0,1fr);gap:9px;align-items:start;min-width:0}
+.business-details .bd-field dt{margin:0;color:#8595aa;font-size:12px;line-height:1.7;white-space:nowrap}
+.business-details .bd-field dd{margin:0;min-width:0;color:#3b5474;font-size:13px;line-height:1.6;overflow-wrap:anywhere}
+.business-details .bd-field dd time{font-variant-numeric:tabular-nums;white-space:nowrap}
+.business-details .bd-conversation-actions{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;border-top:1px solid #edf1f6;padding:15px 0}
+.business-details .bd-conversation-link,.business-details .bd-assistant-link{display:inline-flex;align-items:center;gap:8px;color:#4c7fba;font-size:12px;line-height:1.5;padding:3px 0}
+.business-details .bd-conversation-link>svg:first-child{color:#7c9abb}
+.business-details .bd-conversation-link>b{display:inline-flex;align-items:center;justify-content:center;min-width:24px;min-height:22px;padding:0 6px;border-radius:5px;background:#edf4ff;color:#426fba;font-size:12px;font-weight:600;font-variant-numeric:tabular-nums}
+.business-details .bd-assistant-link{padding:6px 9px;border:1px solid #e4ebf8;border-radius:7px;background:#f7faff;color:#5476ab}
+.business-details .bd-conversation-link:hover,.business-details .bd-assistant-link:hover{color:#225ba3}
+.business-details .bd-assistant-link:hover{background:#edf4ff;border-color:#cbddf9}
+.business-details .bd-amount-overview{padding:19px 20px 20px;background:linear-gradient(115deg,#ecf7fe,#edf5fc);border:1px solid #e2eef8;border-radius:13px}
+.business-details .bd-amount-overview>h3{color:#31597c;font-size:14px;font-weight:650;margin:0 0 14px;line-height:1.6}
+.business-details .bd-amount-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;min-width:0}
+.business-details .bd-amount-card{display:flex;flex-direction:column;justify-content:center;gap:9px;padding:15px 14px;background:#fff;border:1px solid #e8eff7;border-radius:9px;min-width:0}
+.business-details .bd-amount-label{display:flex;align-items:center;gap:6px;color:#8796ab;font-size:12px;line-height:1.5;white-space:nowrap}
+.business-details .bd-amount-label>svg{color:#6d9ccd;flex-shrink:0}
+.business-details .bd-amount-card>strong{color:#264b72;font-size:22px;font-weight:600;letter-spacing:-.5px;line-height:1.35;font-variant-numeric:tabular-nums;white-space:nowrap}
+.business-details .bd-section-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 15px;min-width:0}
+.business-details .bd-section-heading>h3{font-size:14px;font-weight:650;color:#314f71;margin:0;line-height:1.6;white-space:nowrap}
+.business-details .bd-section-heading>span{color:#91a0b3;font-size:12px;line-height:1.6;min-width:0}
+.business-details .bd-opportunities-section>.bd-section-heading{justify-content:flex-start;padding:1px 2px}
+.business-details .bd-opportunity-counts{margin-left:auto}
+.business-details .bd-opportunities-section>.bd-section-heading>h3{display:flex;align-items:center;gap:8px}
+.business-details .bd-opportunities-section>.bd-section-heading>h3:before{content:'';display:block;width:3px;height:14px;border-radius:2px;background:#739bd0}
+.business-details .bd-opportunities-list{display:flex;flex-direction:column;gap:13px}
+.business-details .bd-related-opportunity{padding:17px 18px 18px;background:#fff;border:1px solid #e0e8f3;border-radius:12px;min-width:0}
+.business-details .bd-related-opportunity-heading{display:flex;align-items:flex-start;gap:10px;min-width:0}
+.business-details .bd-opportunity-name{display:inline-flex;align-items:center;gap:8px;text-align:left;flex:1;min-width:0;padding:0;color:#32587f;font-size:15px;font-weight:600;line-height:1.6;overflow-wrap:anywhere}
+.business-details .bd-opportunity-name>svg{flex-shrink:0;color:#8ba5c5;opacity:0;transition:opacity .15s}
+.business-details .bd-opportunity-name:hover{color:#296abc}
+.business-details .bd-opportunity-name:hover>svg,.business-details .bd-opportunity-name:focus-visible>svg{opacity:1}
+.business-details .bd-expand-button{display:grid;place-items:center;width:26px;height:26px;flex:0 0 26px;border-radius:6px;color:#8496ad;background:#f3f6fb}
+.business-details .bd-expand-button:hover{background:#eaf1fc;color:#4773ab}
+.business-details .bd-expand-button[aria-expanded="true"]>svg{transform:rotate(180deg)}
+.business-details .bd-related-meta{display:flex;align-items:center;gap:9px;margin-top:9px;min-width:0;flex-wrap:wrap}
+.business-details .bd-record-id{color:#98a6b9;font-size:11px;line-height:1.5;font-variant-numeric:tabular-nums}
+.business-details .bd-related-meta .stage-duration-tag{font-size:10px;padding:3px 6px}
+.business-details .bd-related-meta .bd-status{font-size:10px;padding:2px 6px}
+.business-details .bd-related-content{margin-top:15px;padding-top:15px;border-top:1px solid #edf1f6}
+.business-details .bd-fields-compact{grid-template-columns:minmax(0,.85fr) minmax(0,1.3fr) minmax(0,1fr);gap:14px;padding:0 0 15px}
+.business-details .bd-fields-compact .bd-field{display:block}
+.business-details .bd-fields-compact .bd-field dt{font-size:11px;margin-bottom:5px}
+.business-details .bd-fields-compact .bd-field dd{font-size:12px;color:#4d627d}
+.business-details .bd-amount-grid-compact{gap:8px}
+.business-details .bd-amount-grid-compact .bd-amount-card{padding:11px 12px;border-color:#eff3f8;background:#f7f9fc;gap:6px;border-radius:7px}
+.business-details .bd-amount-grid-compact .bd-amount-label{font-size:11px;gap:5px}
+.business-details .bd-amount-grid-compact .bd-amount-label>svg{width:13px;height:13px}
+.business-details .bd-amount-grid-compact .bd-amount-card>strong{font-size:17px;letter-spacing:-.3px;color:#3c5879}
+.business-details .bd-progress-section>.bd-section-heading{margin-bottom:23px}
+.business-details .bd-progress-section>.bd-section-heading>span{font-size:11px}
+.business-details .bd-stage-progress{list-style:none;display:flex;padding:0;margin:0 0 2px;min-width:0}
+.business-details .bd-stage-progress>li{display:flex;flex-direction:column;align-items:center;gap:9px;flex:1;position:relative;min-width:0}
+.business-details .bd-stage-progress>li:not(:last-child):after{content:'';height:2px;background:#e7edf5;position:absolute;left:calc(50% + 16px);right:calc(-50% + 16px);top:12px}
+.business-details .bd-stage-node{display:grid;place-items:center;width:26px;height:26px;border:1px solid #e6ecf5;border-radius:100%;background:#f2f5f9;color:#9aa9bd;font-size:11px;position:relative;z-index:1}
+.business-details .bd-stage-label{font-size:11px;line-height:1.5;color:#91a0b5;white-space:nowrap}
+.business-details .bd-stage-completed .bd-stage-node{color:#5286c5;background:#ebf3ff;border-color:#dceafd}
+.business-details .bd-stage-completed .bd-stage-label{color:#718cad}
+.business-details .bd-stage-progress>.bd-stage-completed:after{background:#d2e3fb}
+.business-details .bd-stage-current .bd-stage-node{background:#5b88c7;color:white;border-color:#5b88c7;box-shadow:0 0 0 4px #edf4ff}
+.business-details .bd-stage-current .bd-stage-label{color:#3f71af;font-weight:600}
+.business-details .bd-special-stage{display:flex;align-items:center;gap:9px;border-top:1px solid #edf1f6;margin-top:18px;padding-top:14px;font-size:12px;color:#8a99ad}
+.business-details .bd-design-section>.bd-section-heading{margin-bottom:0}
+.business-details .bd-design-section>.bd-fields{padding-bottom:0}
+.business-details .bd-linked-project{display:flex;align-items:center;gap:12px;width:100%;padding:15px;text-align:left;border:1px solid #e2eaf6;border-radius:9px;background:#f8faff;min-width:0}
+.business-details .bd-linked-project:hover{border-color:#bdd3f3;background:#f1f6ff}
+.business-details .bd-project-link-icon{display:grid;place-items:center;flex:0 0 39px;height:39px;border-radius:9px;background:#eaf2ff;color:#648fc6}
+.business-details .bd-project-link-copy{flex:1;min-width:0}
+.business-details .bd-project-link-copy>strong{display:block;font-size:14px;font-weight:600;line-height:1.6;color:#3e628e;overflow-wrap:anywhere}
+.business-details .bd-project-link-copy>span{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;min-width:0}
+.business-details .bd-project-link-copy>span>small{font-size:11px;color:#93a2b6}
+.business-details .bd-linked-project>svg{color:#92abc9;flex-shrink:0}
+.business-details .bd-empty{padding:32px;border:1px solid #e4ebf5;border-radius:12px;background:#fff;text-align:center;font-size:13px;color:#95a3b6}
+.business-details button:focus-visible{outline:2px solid #86afe7;outline-offset:3px}
+@container(max-width:620px){.business-details .bd-card{padding:19px}.business-details .bd-identity{padding-bottom:0}.business-details .bd-fields{column-gap:18px}.business-details .bd-field{grid-template-columns:67px minmax(0,1fr);gap:7px}.business-details .bd-amount-card{padding:13px 10px}.business-details .bd-amount-card>strong{font-size:20px}.business-details .bd-amount-grid-compact .bd-amount-card>strong{font-size:16px}.business-details .bd-related-opportunity{padding:16px}.business-details .bd-title-block h3{font-size:20px}.business-details .bd-amount-overview{padding:17px}.business-details .bd-opportunity-name>svg{display:none}}
+@container(max-width:470px){.business-details .bd-card{padding:16px}.business-details .bd-identity{padding-bottom:0}.business-details .bd-title-block h3{font-size:18px}.business-details .bd-object-icon{flex-basis:39px;height:39px;border-radius:10px}.business-details .bd-identity-heading{gap:11px}.business-details .bd-fields{grid-template-columns:1fr;gap:13px}.business-details .bd-field{grid-template-columns:78px minmax(0,1fr)}.business-details .bd-fields-compact{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.business-details .bd-amount-grid{gap:6px}.business-details .bd-amount-card{padding:11px 8px;gap:7px}.business-details .bd-amount-card>strong{font-size:17px}.business-details .bd-amount-label{font-size:10px;gap:4px}.business-details .bd-amount-label>svg{width:12px;height:12px}.business-details .bd-amount-grid-compact .bd-amount-card{padding:10px 7px}.business-details .bd-amount-grid-compact .bd-amount-card>strong{font-size:15px}.business-details .bd-amount-grid-compact .bd-amount-label{font-size:10px}.business-details .bd-amount-grid-compact .bd-amount-label>svg{display:none}.business-details .bd-section-heading{flex-wrap:wrap;gap:5px 10px}.business-details .bd-related-meta .bd-duration{flex-basis:100%;margin-left:0}.business-details .bd-related-opportunity{padding:14px}.business-details .bd-progress-section>.bd-section-heading{margin-bottom:19px}.business-details .bd-project-link-icon{display:none}}

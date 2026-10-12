@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { PROJECT_STAGES, OPPORTUNITY_STAGES, BOARD_OPPORTUNITY_STAGES, ORG_TREE, EMPLOYEES, CURRENT_USER, projects, opportunities, tasks, dormantCustomers, receiptEvents, METRIC_CATALOG, DEFAULT_METRIC_KEYS, TODAY, dateKey, getPeriodRange, getProjectStats, getProjectStatus, getMetrics, matchesFilters, matchesPeriod, hydrateStoredTasks, getDepartmentIds, getStageDurationDays } from './data.js';
+import { PROJECT_STAGES, OPPORTUNITY_STAGES, BOARD_OPPORTUNITY_STAGES, ORG_TREE, EMPLOYEES, CURRENT_USER, projects, opportunities, tasks, dormantCustomers, receiptEvents, METRIC_CATALOG, DEFAULT_METRIC_KEYS, TODAY, dateKey, getPeriodRange, getProjectStats, getProjectStatus, getProjectStageEnteredAt, getMetrics, matchesFilters, matchesPeriod, hydrateStoredTasks, getDepartmentIds, getStageDurationDays } from './data.js';
 
 const project = { id: 'test-project', lost: false };
 const item = (status, overrides = {}) => ({ projectId: project.id, category: 'product', status, amount: 1000, quoted: false, ...overrides });
@@ -30,6 +30,65 @@ test('项目手动输单优先，不反向改变商机状态', () => {
 test('项目商机数量、已报价数、成交数与金额使用同一产品集合', () => {
   const items = [item('交付中', { quoted: true }), item('洽谈中'), item('已拒绝', { quoted: true }), item('已完成', { category: 'design' }), item('已完成', { projectId: 'another' })];
   assert.deepEqual(getProjectStats(project, items), { total: 2, quoted: 1, won: 1, amount: 2000 });
+});
+
+test('项目阶段起点区分创建、产品成交与手动输单，排除设计及未接受商机', () => {
+  const datedProject = { ...project, createdAt: '2024-01-01' };
+  const ignored = [
+    item('已完成', { category: 'design', createdAt: '2024-01-01', closedAt: '2024-01-02' }),
+    item('待接受', { createdAt: '2024-01-03' }),
+    item('已拒绝', { createdAt: '2024-01-03' }),
+  ];
+  const products = [
+    item('交付中', { createdAt: '2024-01-02', closedAt: '2024-01-05' }),
+    item('报价中', { createdAt: '2024-01-03', quotedAt: '2024-01-09' }),
+  ];
+  assert.equal(getProjectStageEnteredAt(datedProject, ignored), '2024-01-01');
+  assert.equal(getProjectStageEnteredAt(datedProject, [...products, ...ignored]), '2024-01-05');
+  const completed = { ...products[1], status: '已完成', closedAt: '2024-01-08', stageEnteredAt: '2024-01-12' };
+  assert.equal(getProjectStageEnteredAt(datedProject, [products[0], completed, ...ignored]), '2024-01-08');
+  assert.equal(getProjectStageEnteredAt({ ...datedProject, lost: true, lostAt: '2024-01-15' }, products), '2024-01-15');
+  assert.equal(getProjectStageEnteredAt(datedProject, [item('已输单', { createdAt: '2024-01-02', closedAt: '2024-01-12' })]), '2024-01-01');
+});
+
+test('新增产品使项目退回部分成交时从新阶段起算，同日事件不产生虚假阶段切换', () => {
+  const datedProject = { ...project, createdAt: '2024-01-01' };
+  const first = item('已完成', { createdAt: '2024-01-02', closedAt: '2024-01-05', stageEnteredAt: '2024-01-08' });
+  const second = item('报价中', { createdAt: '2024-01-12' });
+  assert.equal(getProjectStageEnteredAt(datedProject, [first, second]), '2024-01-12');
+  const sameDay = [first, { ...second, status: '交付中', closedAt: '2024-01-12' }];
+  assert.equal(getProjectStageEnteredAt(datedProject, sameDay), '2024-01-05');
+  assert.equal(getProjectStageEnteredAt(datedProject, [...sameDay].reverse()), '2024-01-05');
+});
+
+test('项目阶段关键日期缺失或非法不回退到创建日期，撤销输单日期未知不推测', () => {
+  const datedProject = { ...project, createdAt: '2024-01-01' };
+  const valid = item('交付中', { createdAt: '2024-01-02', closedAt: '2024-01-05' });
+  for (const closedAt of [undefined, null, 'invalid', '2024-02-30', '2023-12-31', '2024-01-01', '2999-01-01']) {
+    assert.equal(getProjectStageEnteredAt(datedProject, [{ ...valid, closedAt }]), null);
+  }
+  for (const createdAt of [undefined, null, 'invalid', '2023-12-31', '2999-01-01']) {
+    assert.equal(getProjectStageEnteredAt(datedProject, [{ ...valid, createdAt }]), null);
+  }
+  for (const lostAt of [undefined, null, 'invalid', '2023-12-31', '2999-01-01']) {
+    assert.equal(getProjectStageEnteredAt({ ...datedProject, lost: true, lostAt }, [valid]), null);
+  }
+  assert.equal(getProjectStageEnteredAt({ ...datedProject, lost: false, lostAt: '2024-01-07' }, [valid]), null);
+  assert.equal(getProjectStageEnteredAt({ ...datedProject, createdAt: null }, [valid]), null);
+  assert.equal(getProjectStageEnteredAt({ ...datedProject, createdAt: '2999-01-01' }, [valid]), null);
+  assert.equal(getProjectStageEnteredAt(null), null);
+});
+
+test('项目阶段起点覆盖全部演示项目，位于创建日至今日且没有修改源对象', () => {
+  const before = JSON.stringify({ projects, opportunities });
+  for (const project of projects) {
+    const enteredAt = getProjectStageEnteredAt(project);
+    assert.match(enteredAt, /^\d{4}-\d{2}-\d{2}$/, project.id);
+    assert.ok(enteredAt >= project.createdAt && enteredAt <= TODAY, project.id);
+    if (project.lost) assert.equal(enteredAt, project.lostAt);
+    if (getProjectStatus(project) === '待成交') assert.equal(enteredAt, project.createdAt);
+  }
+  assert.equal(JSON.stringify({ projects, opportunities }), before);
 });
 
 test('演示数据覆盖各状态且所有商机和日程关联有效项目', () => {
