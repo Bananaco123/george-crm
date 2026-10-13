@@ -10,12 +10,22 @@
 .configurable-metrics .metric-label,.configurable-metrics .metric-footer{width:100%}
 .configurable-metrics .metric-main-value{display:flex;align-items:center;justify-content:space-between;gap:5px;min-width:0;width:100%;flex:1}
 .configurable-metrics .metric-value{display:block;min-width:0;flex-shrink:0}
-.configurable-metrics .has-grade-breakdown .metric-value{font-size:27px!important}
-.configurable-metrics .has-grade-breakdown .metric-value small{margin-left:3px}
-.metric-grade-highlight{display:inline-flex;align-items:center;gap:7px;padding:5px 7px;border:1px solid #e2e9f5;border-radius:6px;background:#f3f7fd;white-space:nowrap;flex-shrink:0;line-height:1.2}
-.metric-grade-highlight i{font-size:10px;font-style:normal;color:#6c83a6}
-.metric-grade-highlight b{font-size:12px;font-weight:600;color:#3a608e;font-variant-numeric:tabular-nums}
-@media(max-width:1450px){.configurable-metrics .has-grade-breakdown .metric-value{font-size:24px!important}.metric-grade-highlight{gap:4px;padding:4px 5px}.metric-grade-highlight i{font-size:9px}.metric-grade-highlight b{font-size:10px}}
+.metric-grade-tooltip{position:fixed;z-index:60;width:224px;padding:13px 15px;background:#fff;border:1px solid #dce5f1;border-radius:9px;box-shadow:0 7px 24px #1d385b1a;color:#3b506d;font-size:12px;line-height:1.5}
+.metric-grade-tooltip::before{content:'';position:absolute;left:var(--grade-arrow-left);width:8px;height:8px;background:#fff;border:1px solid #dce5f1;transform:translateX(-50%) rotate(45deg)}
+.metric-grade-tooltip[data-placement="bottom"]::before{top:-5px;border-right:0;border-bottom:0}
+.metric-grade-tooltip[data-placement="top"]::before{bottom:-5px;border-left:0;border-top:0}
+.metric-grade-tooltip-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:9px;margin-bottom:9px;border-bottom:1px solid #edf1f7}
+.metric-grade-tooltip-heading strong{font-size:13px;font-weight:600;color:#29425f}
+.metric-grade-tooltip-heading>span{font-size:11px;color:#92a0b3}
+.metric-grade-tooltip-row{display:flex;align-items:center;gap:10px;min-height:28px}
+.metric-grade-tooltip-row+.metric-grade-tooltip-row{margin-top:5px}
+.metric-grade-tag{min-width:36px;text-align:center;padding:2px 5px;border:1px solid transparent;border-radius:4px;font-size:11px}
+.metric-grade-tag[data-grade="A"]{color:#b65265;background:#fff1f4;border-color:#f9d8e0}
+.metric-grade-tag[data-grade="B"]{color:#9d7528;background:#fff7e7;border-color:#f5e4b9}
+.metric-grade-tag[data-grade="C"]{color:#477bb5;background:#eff6ff;border-color:#dbe8fb}
+.metric-grade-tooltip-row>strong{margin-left:auto;font-weight:600;font-variant-numeric:tabular-nums}
+.metric-grade-tooltip-row small{font-size:10px;font-weight:400;color:#95a2b4;margin-left:5px}
+.metric-grade-share{width:45px;text-align:right;font-size:11px;color:#8b9aae;font-variant-numeric:tabular-nums}
 
 .metric-settings-dialog{width:min(730px,calc(100vw - 32px));max-height:calc(100vh - 48px);border:1px solid #dce5f0;border-radius:14px;padding:0;background:#fff;color:#34445c;box-shadow:0 22px 80px #18335529;overflow:auto;font-family:inherit}
 .metric-settings-dialog::backdrop{background:#15284658;backdrop-filter:blur(2px)}

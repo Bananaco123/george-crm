@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Icon from './Icon.jsx';
 import { DEFAULT_METRIC_KEYS, METRIC_CATALOG, getMetrics } from '../data.js';
@@ -71,11 +71,63 @@ function MetricSelection({ selected, onSave, onClose }) {
 }
 
 function MetricValue({ metric }) {
-  return <span className="metric-value" title={`${metric.value}${metric.unit}`}>
+  return <span className="metric-value" title={metric.gradeBreakdown ? undefined : `${metric.value}${metric.unit}`}>
     {metric.unit === '元' && <span className="currency">¥</span>}
     {metric.unit === '元' ? metricAmount(metric.value) : amount(metric.value)}
     {metric.unit === '元' ? metric.value >= 10000 && <small>万</small> : <small>{metric.unit}</small>}
   </span>;
+}
+
+function MetricCard({ metric, onNavigate }) {
+  const [showGrades, setShowGrades] = useState(false);
+  const [position, setPosition] = useState(null);
+  const trigger = useRef(null);
+  const tooltip = useRef(null);
+  const closeTimer = useRef(null);
+  const tooltipId = useId();
+  const cancelClose = () => window.clearTimeout(closeTimer.current);
+  const hideGrades = () => { cancelClose(); setShowGrades(false); };
+  const openGrades = () => {
+    if (!metric.gradeBreakdown) return;
+    cancelClose(); setShowGrades(true);
+  };
+  const scheduleClose = () => { cancelClose(); closeTimer.current = window.setTimeout(() => setShowGrades(false), 120); };
+
+  useEffect(() => () => window.clearTimeout(closeTimer.current), []);
+  useLayoutEffect(() => {
+    if (!showGrades || !tooltip.current || !trigger.current) return;
+    const anchor = trigger.current.getBoundingClientRect();
+    const bounds = tooltip.current.getBoundingClientRect();
+    const left = Math.max(12, Math.min(anchor.left + (anchor.width - bounds.width) / 2, window.innerWidth - bounds.width - 12));
+    const above = anchor.bottom + bounds.height + 20 > window.innerHeight && anchor.top > bounds.height + 20;
+    const top = above ? anchor.top - bounds.height - 8 : anchor.bottom + 8;
+    setPosition({ left, top, above, arrow: Math.max(14, Math.min(anchor.left + anchor.width / 2 - left, bounds.width - 14)) });
+  }, [showGrades, metric.gradeBreakdown]);
+  useEffect(() => {
+    if (!showGrades) return;
+    const dismiss = () => setShowGrades(false);
+    const escape = event => { if (event.key === 'Escape') dismiss(); };
+    window.addEventListener('scroll', dismiss, true);
+    window.addEventListener('resize', dismiss);
+    document.addEventListener('keydown', escape);
+    return () => {
+      window.removeEventListener('scroll', dismiss, true);
+      window.removeEventListener('resize', dismiss);
+      document.removeEventListener('keydown', escape);
+    };
+  }, [showGrades]);
+
+  return <>
+    <button ref={trigger} type="button" className="metric-card metric-navigation-card" data-metric-key={metric.key} onClick={() => { hideGrades(); onNavigate?.(metric); }} onMouseEnter={openGrades} onMouseLeave={scheduleClose} onFocus={openGrades} onBlur={scheduleClose} aria-label={`${metric.label}：${amount(metric.value)}${metric.unit}，查看相关页面`} aria-describedby={showGrades ? tooltipId : undefined}>
+      <span className="metric-label"><span>{metric.label}</span><span className={`metric-icon ${metric.color}`}><Icon name={metric.icon} size={15} /></span></span>
+      <span className="metric-main-value"><MetricValue metric={metric} /></span>
+      <span className="metric-footer"><span>较上周期</span><span className={metric.change > 0 ? 'trend-up' : metric.change < 0 ? 'trend-down' : 'trend-flat'}>{metric.change === null ? '—' : `${metric.change > 0 ? '+' : ''}${metric.change}%`}</span></span>
+    </button>
+    {showGrades && metric.gradeBreakdown && createPortal(<div ref={tooltip} id={tooltipId} role="tooltip" className="metric-grade-tooltip" data-placement={position?.above ? 'top' : 'bottom'} style={{ left: position?.left ?? 0, top: position?.top ?? 0, visibility: position ? 'visible' : 'hidden', '--grade-arrow-left': `${position?.arrow ?? 20}px` }} onMouseEnter={cancelClose} onMouseLeave={scheduleClose}>
+      <div className="metric-grade-tooltip-heading"><strong>线索等级</strong><span>共 {amount(metric.value)} 条</span></div>
+      {Object.entries(metric.gradeBreakdown).map(([grade, count]) => <div className="metric-grade-tooltip-row" key={grade} data-grade={grade}><span className="metric-grade-tag" data-grade={grade}>{grade} 类</span><strong>{amount(count)}<small>条</small></strong><span className="metric-grade-share">{metric.value ? `${(count / metric.value * 100).toFixed(1)}%` : '0%'}</span></div>)}
+    </div>, document.body)}
+  </>;
 }
 
 export default function Metrics({ filter, onNavigate }) {
@@ -108,11 +160,7 @@ export default function Metrics({ filter, onNavigate }) {
 
   return <section className="panel metrics-section configurable-metrics" aria-label="业务概览">
     <div className="section-heading"><h2>业务概览</h2><div className="metric-heading-actions"><span className="metric-settings-notice" role="status">{notice}</span><button ref={settingsButton} type="button" className="icon-button metric-settings-trigger" title="设置展示卡片" aria-label="设置展示卡片" aria-haspopup="dialog" onClick={() => setIsConfiguring(true)}><Icon name="settings" size={16} /></button></div></div>
-    <div className="metric-cards">{rows.map((row, rowIndex) => <div className="metric-card-row" key={rowIndex}>{row.map(metric => <button type="button" className={`metric-card metric-navigation-card ${metric.gradeBreakdown ? 'has-grade-breakdown' : ''}`} key={metric.key} data-metric-key={metric.key} onClick={() => onNavigate?.(metric)} aria-label={`${metric.label}：${amount(metric.value)}${metric.unit}${metric.gradeBreakdown ? `，A 类 ${metric.gradeBreakdown.A} 条` : ''}，查看相关页面`}>
-      <span className="metric-label"><span>{metric.label}</span><span className={`metric-icon ${metric.color}`}><Icon name={metric.icon} size={15} /></span></span>
-      <span className="metric-main-value"><MetricValue metric={metric} />{metric.gradeBreakdown && <span className="metric-grade-highlight" aria-label={`A 类线索 ${metric.gradeBreakdown.A} 条`} title={`A 类线索 ${metric.gradeBreakdown.A} 条`}><i>A 类</i><b>{amount(metric.gradeBreakdown.A)}</b></span>}</span>
-      <span className="metric-footer"><span>较上周期</span><span className={metric.change > 0 ? 'trend-up' : metric.change < 0 ? 'trend-down' : 'trend-flat'}>{metric.change === null ? '—' : `${metric.change > 0 ? '+' : ''}${metric.change}%`}</span></span>
-    </button>)}</div>)}</div>
+    <div className="metric-cards">{rows.map((row, rowIndex) => <div className="metric-card-row" key={rowIndex}>{row.map(metric => <MetricCard key={metric.key} metric={metric} onNavigate={onNavigate} />)}</div>)}</div>
     {isConfiguring && <MetricSelection selected={selected} onSave={saveSettings} onClose={closeSettings} />}
   </section>;
 }
