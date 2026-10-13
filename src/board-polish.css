@@ -18,40 +18,40 @@
 .board-panel .board-view-tabs {
   display: flex;
   flex: none;
-  gap: 6px;
+  gap: 28px;
   align-self: stretch;
 }
 
 .board-panel .board-view-tab {
   position: relative;
-  min-width: 104px;
+  min-width: 0;
   min-height: 42px;
-  padding: 10px 18px;
-  border-radius: 6px 6px 0 0;
+  padding: 10px 0;
+  border-radius: 0;
   color: #788ba3;
   font-size: 15px;
-  font-weight: 500;
-  line-height: 22px;
+  font-weight: 600;
+  line-height: normal;
+  letter-spacing: -.2px;
   white-space: nowrap;
 }
 
 .board-panel .board-view-tab:hover {
   color: #3475bf;
-  background: #f4f8fd;
+  background: transparent;
 }
 
 .board-panel .board-view-tab[aria-selected="true"] {
-  color: #206fc9;
-  background: #edf5ff;
-  font-weight: 650;
+  color: #1f2937;
+  background: transparent;
 }
 
 .board-panel .board-view-tab[aria-selected="true"]::after {
   content: '';
   position: absolute;
   bottom: 0;
-  left: 14px;
-  right: 14px;
+  left: 0;
+  right: 0;
   height: 3px;
   border-radius: 3px 3px 0 0;
   background: #2d7ee0;
